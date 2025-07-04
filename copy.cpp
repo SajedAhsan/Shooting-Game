@@ -92,9 +92,9 @@ int medicine_respawn_time = 5000;
 int maxLife = 60;  
 
 //ammo variables
-int ammo_count = 50; // Initial ammo count
-int ammo_max = 50; // Maximum ammo count
-int ammo_respawn_time = 5000; // Time to reload ammo in milliseconds
+int ammo_count = 100; // Initial ammo count
+int ammo_max = 100; // Maximum ammo count
+int ammo_respawn_time = 3000; // Time to reload ammo in milliseconds
 int ammo_x= 0, ammo_y = 128; // Position for ammo pickup
 bool ammo_visible = false; // Flag to show ammo pickup
 
@@ -189,6 +189,8 @@ void resetGameState() {
     soldier_is_dead = false;
     soldier_position_x = 0;
     soldier_position_y = 128;
+    ammo_count=60;
+    ammo_visible = false;
     for (int i = 0; i < MAX_ZOMBIES; i++) {
         zombie_dead_state[i] = false;
         zombie_dead_animation_done[i] = false;
@@ -235,6 +237,13 @@ void resetGameState() {
     iSetSpritePosition(&boss_ca, boss_x, boss_y);
     iSetSpritePosition(&boss_d, boss_x, boss_y);
 }
+// Helper to spawn ammo box near soldier
+void spawnAmmoBox() {
+    ammo_x = soldier_position_x + 70 + rand() % 200;
+    if (ammo_x > 1200) ammo_x = 1200;
+    ammo_y = 128;
+    ammo_visible = true;
+}
 void spawnZombies()
 {
     if (boss_phase || waitingForRunAfterBoss) return; // Block spawn if waiting for run
@@ -272,7 +281,8 @@ bool allZombiesDead()
 {
     for (int i = 0; i < total_zombies; i++)
     {
-        if (!zombie_dead_state[i])
+        // Consider zombie 'dead' if it's dead or has moved off-screen
+        if (!zombie_dead_state[i] && zombie_position_x[i] >= -100)
             return false;
     }
     return true;
@@ -716,6 +726,16 @@ void iDraw()
             iSetColor(255, 0, 0);
             iText(1100, 300, "GO GO -->", GLUT_BITMAP_HELVETICA_18);
         }
+
+        // Draw ammo count at top left
+        char ammoText[32];
+        sprintf(ammoText, "AMMO : %d", ammo_count);
+        iSetColor(0, 200, 255);
+        iText(20, 530, ammoText, GLUT_BITMAP_HELVETICA_18);
+        // Draw ammo box if visible
+        if (ammo_visible) {
+            iShowLoadedImage(ammo_x, ammo_y, &ammo);
+        }
     }
 }
 
@@ -819,6 +839,8 @@ void iKeyboard(unsigned char key)
     }
     if (key == 'f')
     {
+        if (ammo_count <= 0) return; // Block firing if out of ammo
+        ammo_count--;
         if (left)
         {
             if (facing_r)
@@ -858,6 +880,9 @@ void iKeyboard(unsigned char key)
         is_firing = true;
         is_running = false;
         zombie_should_move = true;
+        if (ammo_count == 0 && !ammo_visible) {
+            spawnAmmoBox();
+        }
     }
     if (key == 'w' && !is_jumping) {
         is_jumping = true;
@@ -970,9 +995,14 @@ void iSpecialKeyboard(unsigned char key)
             soldier_fr.x += 7;
             zombie_should_move = true;
             gameScore += 3; // Add 3 points for each step right
+        //      if (waitingForRunAfterBoss) {
+        //     waitingForRunAfterBoss = false;
+        // }
         }
     }
 }
+
+
 
 void boss_update() {
     if (!boss_phase || !boss_alive || isGameOver) return;
@@ -1551,6 +1581,12 @@ void bullet_change_position()
                 }
             }
         }
+    }
+
+    // Ammo box pickup
+    if (ammo_visible && checkCollision(soldier_position_x, soldier_position_y, 100, 100, ammo_x, ammo_y, 50, 50)) {
+        ammo_count = 100;
+        ammo_visible = false;
     }
 
     if (zombie_should_move)

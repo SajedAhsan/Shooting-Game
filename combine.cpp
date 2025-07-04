@@ -319,35 +319,35 @@ void loadResources()
 
     srand(time(0));
     // loading background ingame
-    iLoadImage(&bg, "back.png");
+    iLoadImage(&bg, "assets/bg/back.png");
     iResizeImage(&bg, 1400, 600);
 
     // loading sprties for soldier
-    iLoadFramesFromFolder(soldier_run, "this_img/run");
+    iLoadFramesFromFolder(soldier_run, "assets/this_img/run");
     iInitSprite(&soldier_r);
     iChangeSpriteFrames(&soldier_r, soldier_run, 8);
     iSetSpritePosition(&soldier_r, soldier_position_x, soldier_position_y);
     iScaleSprite(&soldier_r, 3.5);
 
-    iLoadFramesFromFolder(soldier_idle, "this_img/atack");
+    iLoadFramesFromFolder(soldier_idle, "assets/this_img/atack");
     iInitSprite(&soldier_i);
     iChangeSpriteFrames(&soldier_i, soldier_idle, 1);
     iSetSpritePosition(&soldier_i, soldier_position_x, soldier_position_y);
     iScaleSprite(&soldier_i, 3.5);
 
-    iLoadFramesFromFolder(fire, "this_img/attack");
+    iLoadFramesFromFolder(fire, "assets/this_img/attack");
     iInitSprite(&soldier_fr);
     iChangeSpriteFrames(&soldier_fr, fire, 3);
     iSetSpritePosition(&soldier_fr, soldier_position_x, soldier_position_y);
     iScaleSprite(&soldier_fr, 3.5);
 
-    iLoadFramesFromFolder(soldier_dead, "this_img/dead");
+    iLoadFramesFromFolder(soldier_dead, "assets/this_img/dead");
     iInitSprite(&soldier_d);
     iChangeSpriteFrames(&soldier_d, soldier_dead, 4);
     iSetSpritePosition(&soldier_d, soldier_position_x, soldier_position_y);
     iScaleSprite(&soldier_d, 3.5);
 
-    iLoadFramesFromFolder(bullet, "this_img/bullet");
+    iLoadFramesFromFolder(bullet, "assets/this_img/bullet");
     iInitSprite(&bul);
     iChangeSpriteFrames(&bul, bullet, 1);
     iScaleSprite(&bul, 1);
@@ -361,100 +361,98 @@ void loadResources()
         bullet_position_l_y[i] = 250;
     }
 
-
     // loading sprites for zombies
-    iLoadFramesFromFolder(zombie_run, "this_img/z_run");
-    iLoadFramesFromFolder(zombie_dead, "this_img/z_dead");
-    iLoadFramesFromFolder(zombie_attack, "this_img/z_attack");
+    iLoadFramesFromFolder(zombie_run, "assets/this_img/z_run");
+    iLoadFramesFromFolder(zombie_dead, "assets/this_img/z_dead");
+    iLoadFramesFromFolder(zombie_attack, "assets/this_img/z_attack");
     iSetTimer(5000, spawnZombiesPeriodically);
 
-
     // loading sprites for second_boss
-    iLoadFramesFromFolder(second_boss_idle, "this_img/idle_sb");
+    iLoadFramesFromFolder(second_boss_idle, "assets/this_img/idle_sb");
     iInitSprite(&second_boss_spr_idle);
     iChangeSpriteFrames(&second_boss_spr_idle, second_boss_idle, 8);
     iSetSpritePosition(&second_boss_spr_idle, second_boss_x, second_boss_y);
     iScaleSprite(&second_boss_spr_idle, 4);
 
-    iLoadFramesFromFolder(second_boss_attack, "this_img/attack_sb");
+    iLoadFramesFromFolder(second_boss_attack, "assets/this_img/attack_sb");
     iInitSprite(&second_boss_spr_attack);
     iChangeSpriteFrames(&second_boss_spr_attack, second_boss_attack, 7);
     iSetSpritePosition(&second_boss_spr_attack, second_boss_x, second_boss_y);
     iScaleSprite(&second_boss_spr_attack, 4);
 
-    iLoadFramesFromFolder(second_boss_dead, "this_img/dead_sb");
+    iLoadFramesFromFolder(second_boss_dead, "assets/this_img/dead_sb");
     iInitSprite(&second_boss_spr_dead);
     iChangeSpriteFrames(&second_boss_spr_dead, second_boss_dead, 10);
     iSetSpritePosition(&second_boss_spr_dead, second_boss_x, second_boss_y);
     iScaleSprite(&second_boss_spr_dead, 4);
 
-    iLoadFramesFromFolder(second_boss_fire, "this_img/fire_sb");
+    iLoadFramesFromFolder(second_boss_fire, "assets/this_img/fire_sb");
     iInitSprite(&second_boss_spr_fire);
     iChangeSpriteFrames(&second_boss_spr_fire, second_boss_fire, 11);
     iSetSpritePosition(&second_boss_spr_fire, second_boss_x, second_boss_y);
     iScaleSprite(&second_boss_spr_fire, 4);
 
-    iLoadFramesFromFolder(second_boss_walk, "this_img/walk_sb");
+    iLoadFramesFromFolder(second_boss_walk, "assets/this_img/walk_sb");
     iInitSprite(&second_boss_spr_walk);
     iChangeSpriteFrames(&second_boss_spr_walk, second_boss_walk, 8);
     iSetSpritePosition(&second_boss_spr_walk, second_boss_x, second_boss_y);
     iScaleSprite(&second_boss_spr_walk, 4);
 
-    iLoadFramesFromFolder(second_boss_cattack, "this_img/cattack_sb");
+    iLoadFramesFromFolder(second_boss_cattack, "assets/this_img/cattack_sb");
     iInitSprite(&second_boss_spr_cattack);
     iChangeSpriteFrames(&second_boss_spr_cattack, second_boss_cattack, 11);
     iSetSpritePosition(&second_boss_spr_cattack, second_boss_x, second_boss_y);
     iScaleSprite(&second_boss_spr_cattack, 4);
 
     // loading sprites for boss 
-    iLoadFramesFromFolder(boss_idle, "this_img/boss_idle");
+    iLoadFramesFromFolder(boss_idle, "assets/this_img/boss_idle");
     iInitSprite(&boss_i);
     iChangeSpriteFrames(&boss_i, boss_idle, 7);
     iSetSpritePosition(&boss_i, boss_x, boss_y);
     iScaleSprite(&boss_i, 4);
 
-    iLoadFramesFromFolder(boss_run, "this_img/boss_run");
+    iLoadFramesFromFolder(boss_run, "assets/this_img/boss_run");
     iInitSprite(&boss_r);
     iChangeSpriteFrames(&boss_r, boss_run, 8);
     iSetSpritePosition(&boss_r, boss_x, boss_y);
     iScaleSprite(&boss_r, 4);
 
-    iLoadFramesFromFolder(boss_attack, "this_img/boss_attack");
+    iLoadFramesFromFolder(boss_attack, "assets/this_img/boss_attack");
     iInitSprite(&boss_a);
     iChangeSpriteFrames(&boss_a, boss_attack, 8);
     iSetSpritePosition(&boss_a, boss_x, boss_y);
     iScaleSprite(&boss_a, 4);
 
-    iLoadFramesFromFolder(boss_dead, "this_img/boss_dead");
+    iLoadFramesFromFolder(boss_dead, "assets/this_img/boss_dead");
     iInitSprite(&boss_d);
     iChangeSpriteFrames(&boss_d, boss_dead, 6);
     iSetSpritePosition(&boss_d, boss_x, boss_y);
     iScaleSprite(&boss_d, 4);
 
-    iLoadFramesFromFolder(boss_cattack, "this_img/boss_cattack");
+    iLoadFramesFromFolder(boss_cattack, "assets/this_img/boss_cattack");
     iInitSprite(&boss_ca);
     iChangeSpriteFrames(&boss_ca, boss_cattack, 14);
     iSetSpritePosition(&boss_ca, boss_x, boss_y);
     iScaleSprite(&boss_ca, 4);
 
-    iLoadFramesFromFolder(boss_fire, "this_img/boss_fire");
+    iLoadFramesFromFolder(boss_fire, "assets/this_img/boss_fire");
     iInitSprite(&boss_fire_sprite);
     iChangeSpriteFrames(&boss_fire_sprite, boss_fire, 4);
     iScaleSprite(&boss_fire_sprite, 3);
 
     // loading menu_background
     //iLoadImage(&menu_background, "assets/images/menu.png");
-    iLoadImage(&menu_background, "background.png");
+    iLoadImage(&menu_background, "assets/bg/background.png");
     iResizeImage(&menu_background, 1100, 550);
 
     // loading gameover image
-    iLoadImage(&gameover, "gameover.png");
+    iLoadImage(&gameover, "assets/bg/gameover.png");
     iResizeImage(&gameover, 1100, 550);
     // loading victory image
-    iLoadImage(&victory, "victory.png");
+    iLoadImage(&victory, "assets/bg/victory.png");
     iResizeImage(&victory, 1100, 550);
 
-    iLoadImage(&ammo, "this_img/ammobox/ammo.png");
+    iLoadImage(&ammo, "assets/this_img/ammobox/ammo.png");
     iResizeImage(&ammo, 50, 50);
 
     soldier_life = 60;
