@@ -22,7 +22,9 @@ int hoveredIndex = -1;
 int soldier_life = 60;
 int HIGH_SCORE = 0;
 int gameScore = 0;
-bool showHighScoreScreen = false; // Show high score screen in menu
+bool showHighScoreScreen = false;
+bool show_credits = false; 
+bool show_help = false;
 Image menu_background;
 
 
@@ -31,6 +33,8 @@ Image bg;
 Image gameover;
 Image victory;
 Image ammo;
+Image credits;
+Image help;
 
 // Soldier variables
 Image soldier_idle[1], soldier_run[8], soldier_jump[5], fire[3], bullet[1], soldier_dead[4];
@@ -318,9 +322,17 @@ void loadResources()
 {
 
     srand(time(0));
-    // loading background ingame
+    // loading menu background
     iLoadImage(&bg, "assets/bg/back.png");
     iResizeImage(&bg, 1400, 600);
+
+    // credits
+    iLoadImage(&credits, "credits.png");
+    iResizeImage(&credits, 1400, 600);
+
+    // help
+    iLoadImage(&help, "help.png");
+    iResizeImage(&help, 1400, 600);
 
     // loading sprties for soldier
     iLoadFramesFromFolder(soldier_run, "assets/this_img/run");
@@ -560,6 +572,16 @@ void iDraw()
             iText(600, 350, "Press ESC to return", GLUT_BITMAP_HELVETICA_12);
             return;
         }
+        if(show_credits)
+        {
+            iShowLoadedImage(0, 0, &credits);
+            return;
+        }
+        if(show_help)
+        {
+            iShowLoadedImage(0, 0, &help);
+            return;
+        }
         for (int i = 0; i < BUTTON_COUNT; i++)
         {
             int y = menuYStart - i * (menuHeight + menuSpacing);
@@ -770,10 +792,12 @@ void iMouse(int button, int state, int mx, int my)
         else if (hoveredIndex == 2)
         {
             // Help
+            show_help = true;
         }
         else if (hoveredIndex == 3)
         {
             // credit
+            show_credits = true;
         }
         else if (hoveredIndex == 4)
             exit(0);
@@ -787,8 +811,14 @@ void iKeyboard(unsigned char key)
     
     if (!isGameRunning)
     {
-        if (showHighScoreScreen && key == 27) { // ESC to exit high score screen
+        if (showHighScoreScreen && key == 27) { 
             showHighScoreScreen = false;
+        }
+        if (show_credits && key == 27) { 
+            show_credits = false;
+        }
+        if (show_help && key == 27) { 
+            show_help = false;
         }
         return;
     }
