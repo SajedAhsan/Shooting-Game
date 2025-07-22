@@ -38,7 +38,7 @@ void iMouse(int button, int state, int mx, int my)
 {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
-		PlaySound("assets/sounds/bgm1.mp3", NULL, SND_FILENAME | SND_ASYNC);
+		PlaySound("assets/sounds/chime.wav", NULL, SND_FILENAME | SND_ASYNC);
 	}
 	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
 	{
@@ -52,7 +52,7 @@ void iMouseWheel(int dir, int mx, int my)
 	function iKeyboard() is called whenever the user hits a key in keyboard.
 	key- holds the ASCII value of the key pressed.
 */
-void iKeyboard(unsigned char key)
+void iKeyboard(unsigned char key, int state)
 {
 	switch (key)
 	{
@@ -77,7 +77,7 @@ void iKeyboard(unsigned char key)
 	GLUT_KEY_LEFT, GLUT_KEY_UP, GLUT_KEY_RIGHT, GLUT_KEY_DOWN, GLUT_KEY_PAGE UP,
 	GLUT_KEY_PAGE DOWN, GLUT_KEY_HOME, GLUT_KEY_END, GLUT_KEY_INSERT
 */
-void iSpecialKeyboard(unsigned char key)
+void iSpecialKeyboard(unsigned char key, int state)
 {
 	switch (key)
 	{
@@ -94,6 +94,6 @@ void iSpecialKeyboard(unsigned char key)
 int main(int argc, char *argv[])
 {
 	glutInit(&argc, argv);
-	iInitialize(600, 250, "Sound Demo");
+	iOpenWindow(600, 250, "Sound Demo");
 	return 0;
 }
