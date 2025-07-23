@@ -133,8 +133,8 @@ int boss_x = 1100, boss_y = 128;
 int boss_state = 0; // 0: idle, 1: running, 2: attacking, 3: dead 4: close attack
 int boss_frame_timer = 0;
 bool boss_alive = false;
-int boss_health = 250;
-int boss_health_max = 250;
+int boss_health = 175;
+int boss_health_max = 175;
 bool bossMirrored = false;
 // Boss fireball variables
 Image boss_fire[11];
@@ -328,11 +328,11 @@ void loadResources()
     iResizeImage(&bg, 1400, 600);
 
     // credits
-    iLoadImage(&credits, "credits.png");
+    iLoadImage(&credits, "assets/bg/credits.png");
     iResizeImage(&credits, 1400, 600);
 
     // help
-    iLoadImage(&help, "help.png");
+    iLoadImage(&help, "assets/bg/help.png");
     iResizeImage(&help, 1400, 600);
 
     // loading sprties for soldier
@@ -378,7 +378,7 @@ void loadResources()
     iLoadFramesFromFolder(zombie_run, "assets/this_img/z_run");
     iLoadFramesFromFolder(zombie_dead, "assets/this_img/z_dead");
     iLoadFramesFromFolder(zombie_attack, "assets/this_img/z_attack");
-    iSetTimer(5000, spawnZombiesPeriodically);
+    iSetTimer(9000, spawnZombiesPeriodically);
 
     // loading sprites for second_boss
     iLoadFramesFromFolder(second_boss_idle, "assets/this_img/idle_sb");
@@ -1293,10 +1293,10 @@ void iAnim()
                         }
                     }
                     if (!blocked) {
-                        soldier_position_x += 22;
-                        soldier_r.x += 22;
-                        soldier_i.x += 22;
-                        soldier_fr.x += 22;
+                        soldier_position_x += 30;
+                        soldier_r.x += 30;
+                        soldier_i.x += 30;
+                        soldier_fr.x += 30;
                         zombie_should_move = true;
                         gameScore += 1;
                     }
@@ -1441,7 +1441,7 @@ void iAnim()
             iAnimateSprite(&boss_r);
         else if (boss_state == 2)
             iAnimateSprite(&boss_a);
-        else if (boss_state == 4)
+        else if (boss_state == 4)                                
             iAnimateSprite(&boss_ca);
     }
 

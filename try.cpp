@@ -47,7 +47,7 @@ int soldier_death_frame = 0;
 
 
 // Zombie variables
-#define MAX_ZOMBIES 10
+#define MAX_ZOMBIES 15
 Image zombie_run[7], zombie_dead[5], zombie_attack[5];
 Sprite zombie_r[MAX_ZOMBIES], zombie_d[MAX_ZOMBIES], zombie_a[MAX_ZOMBIES];
 bool zombie_dead_state[MAX_ZOMBIES];
@@ -629,7 +629,10 @@ void iDraw()
         else if (is_running)
         {
             gameScore += 1; // Increment score while running
-            // Background wrapping is now handled in iAnim only when soldier is at x=700 and moving right
+            // Only wrap background if no boss or second boss is alive
+            if (!(boss_phase && boss_alive) && !second_boss_alive) {
+                iWrapImage(&bg, -3);
+            }
             iShowSprite(&soldier_r);
         }
         else
@@ -1216,77 +1219,21 @@ void iAnim()
         // Move soldier if arrow key is held
         if (is_running && !is_jumping)
         {
-            // Only allow screen wrapping if boss/second boss is not present
-            int screen_middle = 430;
-            if (!(boss_phase && boss_alive) && !second_boss_alive) {
-                if (right) {
-                    bool blocked = false;
-                    for (int i = 0; i < total_zombies; i++) {
-                        if (checkCollision(zombie_position_x[i], zombie_position_y[i], 100, 100,
-                                           soldier_position_x, soldier_position_y, 100, 100)) {
-                            blocked = true;
-                            break;
-                        }
-                    }
-                    if (!blocked) {
-                        if (soldier_position_x < screen_middle) {
-                            int move_dist = 22;
-                            if (soldier_position_x + move_dist > screen_middle)
-                                move_dist = screen_middle - soldier_position_x;
-                            soldier_position_x += move_dist;
-                            soldier_r.x += move_dist;
-                            soldier_i.x += move_dist;
-                            soldier_fr.x += move_dist;
-                        } else if (soldier_position_x == screen_middle) {
-                            iWrapImage(&bg, -22);
-                        }
-                        // Clamp soldier to 500 if it ever exceeds
-                        if (soldier_position_x > screen_middle) {
-                            int diff = soldier_position_x - screen_middle;
-                            soldier_position_x = screen_middle;
-                            soldier_r.x -= diff;
-                            soldier_i.x -= diff;
-                            soldier_fr.x -= diff;
-                        }
-                        zombie_should_move = true;
-                        gameScore += 1;
+            if (right && soldier_position_x <= 1200) {
+                bool blocked = false;
+                for (int i = 0; i < total_zombies; i++) {
+                    if (checkCollision(zombie_position_x[i], zombie_position_y[i], 100, 100,
+                                       soldier_position_x, soldier_position_y, 100, 100)) {
+                        blocked = true;
+                        break;
                     }
                 }
-                if (left && soldier_position_x > 0) {
-                    int move_dist = 22;
-                    if (soldier_position_x - move_dist < 0)
-                        move_dist = soldier_position_x;
-                    soldier_position_x -= move_dist;
-                    soldier_r.x -= move_dist;
-                    soldier_i.x -= move_dist;
-                    soldier_fr.x -= move_dist;
-                    gameScore += 1;
-                }
-            } else {
-                // Boss/second boss present: allow full movement
-                if (right && soldier_position_x <= 1200) {
-                    bool blocked = false;
-                    for (int i = 0; i < total_zombies; i++) {
-                        if (checkCollision(zombie_position_x[i], zombie_position_y[i], 100, 100,
-                                           soldier_position_x, soldier_position_y, 100, 100)) {
-                            blocked = true;
-                            break;
-                        }
-                    }
-                    if (!blocked) {
-                        soldier_position_x += 22;
-                        soldier_r.x += 22;
-                        soldier_i.x += 22;
-                        soldier_fr.x += 22;
-                        zombie_should_move = true;
-                        gameScore += 1;
-                    }
-                }
-                if (left && soldier_position_x != 0) {
-                    soldier_position_x -= 22;
-                    soldier_r.x -= 22;
-                    soldier_i.x -= 22;
-                    soldier_fr.x -= 22;
+                if (!blocked) {
+                    soldier_position_x += 22;
+                    soldier_r.x += 22;
+                    soldier_i.x += 22;
+                    soldier_fr.x += 22;
+                    zombie_should_move = true;
                     gameScore += 1;
                 }
             }
@@ -1338,8 +1285,6 @@ void iAnim()
     }
     else
     {
-        // Always show death sprite at last soldier position
-        iSetSpritePosition(&soldier_d, soldier_position_x, soldier_position_y);
         iAnimateSprite(&soldier_d);
         soldier_death_frame++;
         if (soldier_death_frame >= 4)

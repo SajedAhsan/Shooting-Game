@@ -47,7 +47,7 @@ int soldier_death_frame = 0;
 
 
 // Zombie variables
-#define MAX_ZOMBIES 15
+#define MAX_ZOMBIES 10
 Image zombie_run[7], zombie_dead[5], zombie_attack[5];
 Sprite zombie_r[MAX_ZOMBIES], zombie_d[MAX_ZOMBIES], zombie_a[MAX_ZOMBIES];
 bool zombie_dead_state[MAX_ZOMBIES];
@@ -378,7 +378,7 @@ void loadResources()
     iLoadFramesFromFolder(zombie_run, "assets/this_img/z_run");
     iLoadFramesFromFolder(zombie_dead, "assets/this_img/z_dead");
     iLoadFramesFromFolder(zombie_attack, "assets/this_img/z_attack");
-    iSetTimer(5000, spawnZombiesPeriodically);
+    iSetTimer(9000, spawnZombiesPeriodically);
 
     // loading sprites for second_boss
     iLoadFramesFromFolder(second_boss_idle, "assets/this_img/idle_sb");
@@ -629,10 +629,7 @@ void iDraw()
         else if (is_running)
         {
             gameScore += 1; // Increment score while running
-            // Only wrap background if no boss or second boss is alive
-            if (!(boss_phase && boss_alive) && !second_boss_alive) {
-                iWrapImage(&bg, -3);
-            }
+            // Background wrapping is now handled in iAnim only when soldier is at x=700 and moving right
             iShowSprite(&soldier_r);
         }
         else
@@ -942,52 +939,64 @@ void iKeyboard(unsigned char key, int state)
             facing_r = false;
         }
     }
-    if (key == 'f')
-    {
-        if (ammo_count <= 0) return; // Block firing if out of ammo
-        ammo_count--;
-        if (left)
-        {
-            if (facing_r)
-            {
-                iMirrorSprite(&soldier_fr, HORIZONTAL);
-                facing_r = false;
-            }
-            for (int i = 0; i < MAX_BULLETS; i++)
-            {
-                if (!bullet_fired_l[i])
-                {
-                    bullet_fired_l[i] = true;
-                    bullet_position_l_x[i] = soldier_position_x - 40;
-                    bullet_position_l_y[i] = 250;
-                    break;
+    // Restore original 'f' key logic: fire bullet only once per key press
+    if (key == 'f') {
+        if (state == GLUT_DOWN) {
+            is_firing = true;
+            is_running = false;
+            if (ammo_count > 0) {
+                ammo_count--;
+                if (left) {
+                    if (facing_r) {
+                        iMirrorSprite(&soldier_fr, HORIZONTAL);
+                        facing_r = false;
+                    }
+                    for (int i = 0; i < MAX_BULLETS; i++) {
+                        if (!bullet_fired_l[i]) {
+                            bullet_fired_l[i] = true;
+                            bullet_position_l_x[i] = soldier_position_x - 40;
+                            bullet_position_l_y[i] = 250;
+                            break;
+                        }
+                    }
+                } else if (right) {
+                    if (!facing_r) {
+                        iMirrorSprite(&soldier_fr, HORIZONTAL);
+                        facing_r = true;
+                    }
+                    for (int i = 0; i < MAX_BULLETS; i++) {
+                        if (!bullet_fired_r[i]) {
+                            bullet_fired_r[i] = true;
+                            bullet_position_r_x[i] = soldier_position_x + 150;
+                            bullet_position_r_y[i] = 250;
+                            break;
+                        }
+                    }
+                } else {
+                    if (!facing_r) {
+                        iMirrorSprite(&soldier_fr, HORIZONTAL);
+                        facing_r = true;
+                    }
+                    for (int i = 0; i < MAX_BULLETS; i++) {
+                        if (!bullet_fired_r[i]) {
+                            bullet_fired_r[i] = true;
+                            bullet_position_r_x[i] = soldier_position_x + 150;
+                            bullet_position_r_y[i] = 250;
+                            break;
+                        }
+                    }
+                }
+                zombie_should_move = true;
+                if (ammo_count == 0 && !ammo_visible) {
+                    spawnAmmoBox();
                 }
             }
+        } else if (state == GLUT_UP) {
+            is_firing = false;
+            is_running = false;
+            iSetSpritePosition(&soldier_i, soldier_position_x, soldier_position_y);
         }
-        else if (right)
-        {
-            if (!facing_r)
-            {
-                iMirrorSprite(&soldier_fr, HORIZONTAL);
-                facing_r = true;
-            }
-            for (int i = 0; i < MAX_BULLETS; i++)
-            {
-                if (!bullet_fired_r[i])
-                {
-                    bullet_fired_r[i] = true;
-                    bullet_position_r_x[i] = soldier_position_x + 150;
-                    bullet_position_r_y[i] = 250;
-                    break;
-                }
-            }
-        }
-        is_firing = true;
-        is_running = false;
-        zombie_should_move = true;
-        if (ammo_count == 0 && !ammo_visible) {
-            spawnAmmoBox();
-        }
+        return;
     }
     if (key == 'w' && !is_jumping) {
         is_jumping = true;
@@ -1219,21 +1228,84 @@ void iAnim()
         // Move soldier if arrow key is held
         if (is_running && !is_jumping)
         {
-            if (right && soldier_position_x <= 1200) {
-                bool blocked = false;
-                for (int i = 0; i < total_zombies; i++) {
-                    if (checkCollision(zombie_position_x[i], zombie_position_y[i], 100, 100,
-                                       soldier_position_x, soldier_position_y, 100, 100)) {
-                        blocked = true;
-                        break;
+            // Only allow screen wrapping if boss/second boss is not present
+            int screen_middle = 430;
+            if (!(boss_phase && boss_alive) && !second_boss_alive) {
+                if (right) {
+                    bool blocked = false;
+                    for (int i = 0; i < total_zombies; i++) {
+                        if (checkCollision(zombie_position_x[i], zombie_position_y[i], 100, 100,
+                                           soldier_position_x, soldier_position_y, 100, 100)) {
+                            blocked = true;
+                            break;
+                        }
+                    }
+                    if (!blocked) {
+                        if (soldier_position_x < screen_middle) {
+                            int move_dist = 22;
+                            if (soldier_position_x + move_dist > screen_middle)
+                                move_dist = screen_middle - soldier_position_x;
+                            soldier_position_x += move_dist;
+                            soldier_r.x += move_dist;
+                            soldier_i.x += move_dist;
+                            soldier_fr.x += move_dist;
+                        } else if (soldier_position_x == screen_middle) {
+                            iWrapImage(&bg, -22);
+                            // Wrap medicine and ammo boxes with the background
+                            if (medicine_visible) {
+                                medicine_x -= 22;
+                            }
+                            if (ammo_visible) {
+                                ammo_x -= 22;
+                            }
+                        }
+                        // Clamp soldier to 500 if it ever exceeds
+                        if (soldier_position_x > screen_middle) {
+                            int diff = soldier_position_x - screen_middle;
+                            soldier_position_x = screen_middle;
+                            soldier_r.x -= diff;
+                            soldier_i.x -= diff;
+                            soldier_fr.x -= diff;
+                        }
+                        zombie_should_move = true;
+                        gameScore += 1;
                     }
                 }
-                if (!blocked) {
-                    soldier_position_x += 22;
-                    soldier_r.x += 22;
-                    soldier_i.x += 22;
-                    soldier_fr.x += 22;
-                    zombie_should_move = true;
+                if (left && soldier_position_x > 0) {
+                    int move_dist = 22;
+                    if (soldier_position_x - move_dist < 0)
+                        move_dist = soldier_position_x;
+                    soldier_position_x -= move_dist;
+                    soldier_r.x -= move_dist;
+                    soldier_i.x -= move_dist;
+                    soldier_fr.x -= move_dist;
+                    gameScore += 1;
+                }
+            } else {
+                // Boss/second boss present: allow full movement
+                if (right && soldier_position_x <= 1200) {
+                    bool blocked = false;
+                    for (int i = 0; i < total_zombies; i++) {
+                        if (checkCollision(zombie_position_x[i], zombie_position_y[i], 100, 100,
+                                           soldier_position_x, soldier_position_y, 100, 100)) {
+                            blocked = true;
+                            break;
+                        }
+                    }
+                    if (!blocked) {
+                        soldier_position_x += 22;
+                        soldier_r.x += 22;
+                        soldier_i.x += 22;
+                        soldier_fr.x += 22;
+                        zombie_should_move = true;
+                        gameScore += 1;
+                    }
+                }
+                if (left && soldier_position_x != 0) {
+                    soldier_position_x -= 22;
+                    soldier_r.x -= 22;
+                    soldier_i.x -= 22;
+                    soldier_fr.x -= 22;
                     gameScore += 1;
                 }
             }
@@ -1248,9 +1320,10 @@ void iAnim()
         }
         // Handle continuous mouse fire
         static int mouse_fire_delay = 0;
+        // Continuous fire for mouse
         if (mouse_fire_held && !is_jumping && ammo_count > 0) {
             mouse_fire_delay++;
-            if (mouse_fire_delay >= 1) { // fire every 2 frames (faster)
+            if (mouse_fire_delay >= 1) {
                 ammo_count--;
                 if (facing_r) {
                     for (int i = 0; i < MAX_BULLETS; i++) {
@@ -1278,13 +1351,74 @@ void iAnim()
                 mouse_fire_delay = 0;
             }
         } else {
-            mouse_fire_delay = 2; // Prevent immediate fire after release
+            mouse_fire_delay = 2;
+        }
+        // Continuous fire for 'f' key
+        static int f_key_fire_delay = 0;
+        if (is_firing && !is_jumping && ammo_count > 0) {
+            f_key_fire_delay++;
+            if (f_key_fire_delay >= 1) {
+                ammo_count--;
+                if (left) {
+                    if (facing_r) {
+                        iMirrorSprite(&soldier_fr, HORIZONTAL);
+                        facing_r = false;
+                    }
+                    for (int i = 0; i < MAX_BULLETS; i++) {
+                        if (!bullet_fired_l[i]) {
+                            bullet_fired_l[i] = true;
+                            bullet_position_l_x[i] = soldier_position_x - 40;
+                            bullet_position_l_y[i] = 250;
+                            break;
+                        }
+                    }
+                } else if (right) {
+                    if (!facing_r) {
+                        iMirrorSprite(&soldier_fr, HORIZONTAL);
+                        facing_r = true;
+                    }
+                    for (int i = 0; i < MAX_BULLETS; i++) {
+                        if (!bullet_fired_r[i]) {
+                            bullet_fired_r[i] = true;
+                            bullet_position_r_x[i] = soldier_position_x + 150;
+                            bullet_position_r_y[i] = 250;
+                            break;
+                        }
+                    }
+                } else {
+                    if (!facing_r) {
+                        iMirrorSprite(&soldier_fr, HORIZONTAL);
+                        facing_r = true;
+                    }
+                    for (int i = 0; i < MAX_BULLETS; i++) {
+                        if (!bullet_fired_r[i]) {
+                            bullet_fired_r[i] = true;
+                            bullet_position_r_x[i] = soldier_position_x + 150;
+                            bullet_position_r_y[i] = 250;
+                            break;
+                        }
+                    }
+                }
+                zombie_should_move = true;
+                if (ammo_count == 0 && !ammo_visible) {
+                    spawnAmmoBox();
+                }
+                f_key_fire_delay = 0;
+            }
+        } else {
+            f_key_fire_delay = 2;
+        }
+        // If not firing, show idle sprite (prevents stuck fire pose)
+        if (!is_firing && !is_jumping) {
+            iSetSpritePosition(&soldier_i, soldier_position_x, soldier_position_y);
         }
         if (is_firing && !is_jumping)
             iAnimateSprite(&soldier_fr);
     }
     else
     {
+        // Always show death sprite at last soldier position
+        iSetSpritePosition(&soldier_d, soldier_position_x, soldier_position_y);
         iAnimateSprite(&soldier_d);
         soldier_death_frame++;
         if (soldier_death_frame >= 4)
