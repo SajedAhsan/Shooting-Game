@@ -3,17 +3,69 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
+#include <string.h>
+
+#define MAX_LEADERBOARD_SIZE 5
+#define MAX_NAME_LENGTH 20
+#define MAX_ZOMBIES 10
+
+
+int zombie_sound_channel = -1;
+bool isZombieSoundPlaying = false;
+
+// Structure for game state
+typedef struct {
+    bool valid;
+    int soldier_life;
+    int gameScore;
+    int soldier_position_x;
+    int soldier_position_y;
+    int ammo_count;
+    bool boss_phase;
+    int second_boss_kill_count;
+    char playerName[MAX_NAME_LENGTH];
+    bool second_boss_alive;
+    bool second_boss_spawned;
+    int second_boss_life;
+    bool facing_r;
+    bool is_jumping;
+    bool is_running;
+    bool is_firing;
+    bool zombie_should_move;
+    // zombie state arrays
+    int total_zombies;
+    bool zombie_dead_state[MAX_ZOMBIES];
+    bool zombie_dead_animation_done[MAX_ZOMBIES];
+    int zombie_position_x[MAX_ZOMBIES];
+    int zombie_position_y[MAX_ZOMBIES];
+    int zombie_life[MAX_ZOMBIES];
+} GameState;
+
+// save state variables
+GameState savedState = {false};
+const char* SAVE_FILE = "saves/gamestate.bin";
+
+// structure to store player score
+typedef struct {
+    char name[MAX_NAME_LENGTH];
+    int score;
+} PlayerScore;
+
+// variables for leaderboard
+PlayerScore leaderboard[MAX_LEADERBOARD_SIZE];
+char currentPlayerName[MAX_NAME_LENGTH] = "";
+bool isEnteringName = false;
 
 // flags for game status
 bool isGameRunning = false;
-bool isGameOver = false;
+bool is_game_over = false;
 int gameOverTimer = 0;
 bool isVictory = false; // Flag for victory state
 bool paused = false; // Pause flag
 
 // menu variables
-#define BUTTON_COUNT 5
-const char *menuItems[BUTTON_COUNT] = {"PLAY", "HIGH SCORE", "HELP", "CREDITS", "EXIT"};
+#define BUTTON_COUNT 6
+const char *menu_items[BUTTON_COUNT] = {"PLAY", "RESUME", "LEADERBOARD", "HELP", "CREDITS", "EXIT"};
 int menuYStart = 350;
 int menuX = 550;
 int menuWidth = 150;
@@ -21,9 +73,11 @@ int menuHeight = 40;
 int menuSpacing = 20;
 int hoveredIndex = -1;
 int soldier_life = 60;
+bool canResume = false;
+
 int HIGH_SCORE = 0;
 int gameScore = 0;
-bool showHighScoreScreen = false;
+bool show_high_score_screen = false;
 bool show_credits = false; 
 bool show_help = false;
 Image menu_background;
@@ -69,18 +123,18 @@ bool facing_r = true;
 int bg_flag = 0;
 bool is_running = false;
 bool is_firing = false;
-bool mouse_fire_held = false; // Track if mouse fire is held
+bool mouse_fire_held = false; 
 bool jump = false;
 bool is_jumping=false;
 bool zombie_should_move = false;
-bool left = false;  // left movement flag
-bool right = false; // right movement flag
+bool left = false;  
+bool right = false; 
 int jump_height=200;
-int jump_speed = 55; // FASTER JUMP
-int jump_direction = 1; // 1 for up, -1 for down
-int ground_y = 128; // Ground level for soldier
-int ground_level = 128; // Ground level for soldier
-int max_jump_height = 200; // Maximum jump height
+int jump_speed = 55; 
+int jump_direction = 1; 
+int ground_y = 128; 
+int ground_level = 128; 
+int max_jump_height = 200; 
 // bullet varialbes
 #define MAX_BULLETS 30
 bool bullet_fired_r[MAX_BULLETS];
@@ -90,7 +144,7 @@ int bullet_position_r_y[MAX_BULLETS];
 int bullet_position_l_x[MAX_BULLETS];
 int bullet_position_l_y[MAX_BULLETS];
 
-// Medicine variables
+// medicine variables
 int medicine_x = 0, medicine_y = 128;
 bool medicine_visible = false;
 int medicine_timer = 0;
@@ -98,11 +152,11 @@ int medicine_respawn_time = 5000;
 int maxLife = 60;  
 
 //ammo variables
-int ammo_count = 100; // Initial ammo count
-int ammo_max = 100; // Maximum ammo count
-int ammo_respawn_time = 3000; // Time to reload ammo in milliseconds
-int ammo_x= 0, ammo_y = 128; // Position for ammo pickup
-bool ammo_visible = false; // Flag to show ammo pickup
+int ammo_count = 100; 
+int ammo_max = 100; 
+int ammo_respawn_time = 3000; 
+int ammo_x= 0, ammo_y = 128; 
+bool ammo_visible = false; 
 
 
 
@@ -146,7 +200,7 @@ bool boss_fire_left = false;
 // Tracking second boss kill count 
 int second_boss_kill_count = 0;
 bool boss_phase = false; 
-bool waitingForRunAfterBoss = false; // Flag to wait for run after boss defeat
+bool waitingForRunAfterBoss = false;
 
 
 
@@ -176,8 +230,20 @@ void zombieAttackUpdate()
 }
 // Function to reset all game state variables and positions for a fresh start
 void resetGameState() {
+    // clear any saved game state when starting a new game
+    canResume = false;
+    savedState.valid = false;
+    // removed the save-state file
+    remove(SAVE_FILE);
+    
+    // stop zombie sound if it's playing
+    if (isZombieSoundPlaying) {
+        iStopSound(zombie_sound_channel);
+        isZombieSoundPlaying = false;
+    }
+    
     isGameRunning = true;
-    isGameOver = false;
+    is_game_over = false;
     isVictory = false;
     gameOverTimer = 0;
     soldier_life = 60;
@@ -243,7 +309,7 @@ void resetGameState() {
     iSetSpritePosition(&boss_ca, boss_x, boss_y);
     iSetSpritePosition(&boss_d, boss_x, boss_y);
 }
-// Helper to spawn ammo box near soldier
+// helper to spawn ammo box near soldier
 void spawnAmmoBox() {
     ammo_x = soldier_position_x + 70 + rand() % 200;
     if (ammo_x > 1200) ammo_x = 1200;
@@ -252,7 +318,7 @@ void spawnAmmoBox() {
 }
 void spawnZombies()
 {
-    if (boss_phase || waitingForRunAfterBoss) return; // Block spawn if waiting for run
+    if (boss_phase || waitingForRunAfterBoss) return; 
     total_zombies = 3 + rand() % (MAX_ZOMBIES - 3);
     for (int i = 0; i < total_zombies; i++)
     {
@@ -282,12 +348,47 @@ void spawnZombies()
         iSetSpritePosition(&zombie_a[i], zombie_position_x[i], zombie_position_y[i]);
         iScaleSprite(&zombie_a[i], 3.75);
     }
+    
+    //zombie sound is playing when spawning new zombies
+    if (!isZombieSoundPlaying) {
+        zombie_sound_channel = iPlaySound("assets/sounds/zombie.wav", true);
+        isZombieSoundPlaying = true;
+    }
+}
+
+// function to handle zombie sounds
+void playZombieAmbience() {
+    if (!isGameRunning || paused || is_game_over || boss_phase) {
+        if (isZombieSoundPlaying) {
+            iStopSound(zombie_sound_channel);
+            isZombieSoundPlaying = false;
+        }
+        return;
+    }
+        
+    // check if any zombies are visible on screen
+    bool zombiesVisible = false;
+    for (int i = 0; i < total_zombies; i++) {
+        if (!zombie_dead_state[i] && zombie_position_x[i] >= -100 && zombie_position_x[i] <= 1400) {
+            zombiesVisible = true;
+            break;
+        }
+    }
+
+    // handles zombie sounds based on visibility
+    if (zombiesVisible && !isZombieSoundPlaying) {
+        zombie_sound_channel = iPlaySound("assets/sounds/zombie.wav", true);
+        isZombieSoundPlaying = true;
+    } 
+    else if (!zombiesVisible && isZombieSoundPlaying) {
+        iStopSound(zombie_sound_channel);
+        isZombieSoundPlaying = false;
+    }
 }
 bool allZombiesDead()
 {
     for (int i = 0; i < total_zombies; i++)
     {
-        // Consider zombie 'dead' if it's dead or has moved off-screen
         if (!zombie_dead_state[i] && zombie_position_x[i] >= -100)
             return false;
     }
@@ -295,7 +396,7 @@ bool allZombiesDead()
 }
 void spawnZombiesPeriodically()
 {
-    if (boss_phase || waitingForRunAfterBoss) return; // Block spawn if waiting for run
+    if (boss_phase || waitingForRunAfterBoss) return; 
     if (allZombiesDead())
     {
         spawnZombies();
@@ -303,8 +404,8 @@ void spawnZombiesPeriodically()
 }
 void second_bossSpawnTimerUpdate()
 {
-    if (boss_phase || waitingForRunAfterBoss || paused) return; // Block spawn if waiting for run or paused
-    if (!second_boss_spawned && isGameRunning && !isGameOver)
+    if (boss_phase || waitingForRunAfterBoss || paused) return;
+    if (!second_boss_spawned && isGameRunning && !is_game_over)
     {
         second_boss_spawn_timer += 100;
         if (second_boss_spawn_timer >= 40000)
@@ -469,7 +570,7 @@ void loadResources()
     iResizeImage(&ammo, 50, 50);
 
     soldier_life = 60;
-    isGameOver = false;
+    is_game_over = false;
     gameOverTimer = 0;
 
     boss_alive = false;
@@ -478,25 +579,145 @@ void loadResources()
     second_boss_kill_count = 0;
 }
 
-// File path for high score
-const char* HIGH_SCORE_FILE = "saves/highscore.txt";
+// file path for leaderboard
+const char* LEADERBOARD_FILE = "saves/leaderboard.txt";
 
-void loadHighScore() {
-    FILE* f = fopen(HIGH_SCORE_FILE, "r");
+void saveLeaderboard() {
+    FILE* f = fopen(LEADERBOARD_FILE, "w");
     if (f) {
-        fscanf(f, "%d", &HIGH_SCORE);
+        for(int i = 0; i < MAX_LEADERBOARD_SIZE; i++) {
+            fprintf(f, "%s %d\n", leaderboard[i].name, leaderboard[i].score);
+        }
         fclose(f);
-    } else {
-        HIGH_SCORE = 0;
     }
 }
 
-void saveHighScore() {
-    FILE* f = fopen(HIGH_SCORE_FILE, "w");
-    if (f) {
-        fprintf(f, "%d", HIGH_SCORE);
+void saveGameState() {
+    if(!isGameRunning || is_game_over || isVictory) return;
+    
+    savedState.valid = true;
+    savedState.soldier_life = soldier_life;
+    savedState.gameScore = gameScore;
+    savedState.soldier_position_x = soldier_position_x;
+    savedState.soldier_position_y = soldier_position_y;
+    savedState.ammo_count = ammo_count;
+    savedState.boss_phase = boss_phase;
+    savedState.second_boss_kill_count = second_boss_kill_count;
+    savedState.second_boss_alive = second_boss_alive;
+    savedState.second_boss_spawned = second_boss_spawned;
+    savedState.second_boss_life = second_boss_life;
+    strcpy(savedState.playerName, currentPlayerName);
+
+    FILE* f = fopen(SAVE_FILE, "wb");
+    if(f) {
+        fwrite(&savedState, sizeof(GameState), 1, f);
         fclose(f);
     }
+}
+
+void loadGameState() {
+    FILE* f = fopen(SAVE_FILE, "rb");
+    if(f) {
+        fread(&savedState, sizeof(GameState), 1, f);
+        fclose(f);
+        if(savedState.valid) {
+            canResume = true;
+        }
+    }
+}
+
+void resumeGame() {
+    if(!savedState.valid) return;
+    
+    isGameRunning = true;
+    soldier_life = savedState.soldier_life;
+    gameScore = savedState.gameScore;
+    soldier_position_x = savedState.soldier_position_x;
+    soldier_position_y = savedState.soldier_position_y;
+    ammo_count = savedState.ammo_count;
+    boss_phase = savedState.boss_phase;
+    second_boss_kill_count = savedState.second_boss_kill_count;
+    second_boss_alive = savedState.second_boss_alive;
+    second_boss_spawned = savedState.second_boss_spawned;
+    second_boss_life = savedState.second_boss_life;
+    strcpy(currentPlayerName, savedState.playerName);
+
+    // reset sprite positions
+    iSetSpritePosition(&soldier_r, soldier_position_x, soldier_position_y);
+    iSetSpritePosition(&soldier_i, soldier_position_x, soldier_position_y);
+    iSetSpritePosition(&soldier_fr, soldier_position_x, soldier_position_y);
+    iSetSpritePosition(&soldier_d, soldier_position_x, soldier_position_y);
+}
+
+void cleanup() {
+    saveGameState();
+}
+
+void loadLeaderboard() {
+    FILE* f = fopen(LEADERBOARD_FILE, "r");
+    if (f) {
+        for(int i = 0; i < MAX_LEADERBOARD_SIZE; i++) {
+            fscanf(f, "%s %d", leaderboard[i].name, &leaderboard[i].score);
+        }
+        fclose(f);
+    } else {
+        // Initialize empty leaderboard
+        for(int i = 0; i < MAX_LEADERBOARD_SIZE; i++) {
+            strcpy(leaderboard[i].name, "---");
+            leaderboard[i].score = 0;
+        }
+        saveLeaderboard(); // Create initial file
+    }
+}
+
+void updateLeaderboard(const char* name, int score) {
+    // if player already exists
+    int existingPos = -1;
+    for(int i = 0; i < MAX_LEADERBOARD_SIZE; i++) {
+        if(strcmp(leaderboard[i].name, name) == 0) {
+            existingPos = i;
+            break;
+        }
+    }
+
+    // player exists and new score is better, remove old entry
+    if(existingPos != -1) {
+        if(score <= leaderboard[existingPos].score) {
+            return;
+        }
+        // remove existing entry
+        for(int i = existingPos; i < MAX_LEADERBOARD_SIZE-1; i++) {
+            strcpy(leaderboard[i].name, leaderboard[i+1].name);
+            leaderboard[i].score = leaderboard[i+1].score;
+        }
+        strcpy(leaderboard[MAX_LEADERBOARD_SIZE-1].name, "---");
+        leaderboard[MAX_LEADERBOARD_SIZE-1].score = 0;
+    }
+
+    int insertPos = -1;
+    for(int i = 0; i < MAX_LEADERBOARD_SIZE; i++) {
+        if(strcmp(leaderboard[i].name, "---") == 0 || score > leaderboard[i].score) {
+            insertPos = i;
+            break;
+        }
+    }
+
+    if(insertPos == -1) {
+        // Score is too low to make it to top 5
+        return;
+    }
+
+    // Shift scores down to make room for new score
+    for(int i = MAX_LEADERBOARD_SIZE-1; i > insertPos; i--) {
+        strcpy(leaderboard[i].name, leaderboard[i-1].name);
+        leaderboard[i].score = leaderboard[i-1].score;
+    }
+
+    // Insert new score
+    strcpy(leaderboard[insertPos].name, name);
+    leaderboard[insertPos].score = score;
+
+    saveLeaderboard();
 }
 
 void spawnMedicine()
@@ -511,7 +732,7 @@ void spawnMedicine()
 
 void medicineTimerUpdate()
 {
-    if (!isGameRunning || isGameOver || paused)
+    if (!isGameRunning || is_game_over || paused)
         return;
     medicine_timer += 150; 
     if (!medicine_visible && medicine_timer >= medicine_respawn_time && !boss_phase)
@@ -540,7 +761,6 @@ void updateJump() {
         is_jumping = false;
         jump_direction = 1;
     }
-    // Zombies should move while jumping
     zombie_should_move = true;
 }
 
@@ -548,17 +768,20 @@ void iDraw()
 {
     iClear();
 
-    if (isGameOver) {
-        if (gameScore > HIGH_SCORE) {
-            HIGH_SCORE = gameScore;
-            saveHighScore();
+    if (is_game_over) {
+        if (gameScore > 0) {
+            updateLeaderboard(currentPlayerName, gameScore);
         }
+        // clear saved game when game is over
+        canResume = false;
+        savedState.valid = false;
+        remove(SAVE_FILE);
+        
         if (isVictory) {
             iShowLoadedImage(50, 50, &victory);
         } else {
             iShowLoadedImage(50, 50, &gameover);
         }
-        // Show 'Press h to return main menu' at middle bottom
         iSetColor(255, 255, 0);
         iText(600, 80, "Press 'h' to return main menu", GLUT_BITMAP_HELVETICA_18);
         iSetColor(255, 255, 255);
@@ -568,13 +791,24 @@ void iDraw()
     if (!isGameRunning)
     {
         iShowLoadedImage(0, 0, &menu_background);
-        if (showHighScoreScreen) {
+        if(isEnteringName) {
             iSetColor(255, 255, 0);
-            char hs[64];
-            sprintf(hs, "HIGH SCORE : %d", HIGH_SCORE);
-            iText(600, 400, hs, GLUT_BITMAP_HELVETICA_18);
+            iText(550, 400, "Enter your name:", GLUT_BITMAP_HELVETICA_18);
+            iSetColor(255, 255, 255);
+            iText(550, 350, currentPlayerName, GLUT_BITMAP_HELVETICA_18);
+            iText(550, 300, "Press ENTER to start", GLUT_BITMAP_HELVETICA_12);
+            return;
+        }
+        if (show_high_score_screen) {
+            iSetColor(255, 255, 0);
+            iText(600, 500, "LEADERBOARD", GLUT_BITMAP_HELVETICA_18);
+            for(int i = 0; i < MAX_LEADERBOARD_SIZE; i++) {
+                char scoreText[64];
+                sprintf(scoreText, "%d. %s: %d", i+1, leaderboard[i].name, leaderboard[i].score);
+                iText(600, 450-i*40, scoreText, GLUT_BITMAP_HELVETICA_18);
+            }
             iSetColor(255,255,255);
-            iText(600, 350, "Press ESC to return", GLUT_BITMAP_HELVETICA_12);
+            iText(600, 200, "Press ESC to return", GLUT_BITMAP_HELVETICA_12);
             return;
         }
         if(show_credits)
@@ -587,14 +821,32 @@ void iDraw()
             iShowLoadedImage(0, 0, &help);
             return;
         }
+        int visibleButtons = 0;
+        for (int i = 0; i < BUTTON_COUNT; i++) {
+            if (i == 1 && !canResume) continue;
+            visibleButtons++;
+        }
+
+        int adjustedMenuYStart = menuYStart + ((BUTTON_COUNT - visibleButtons) * (menuHeight + menuSpacing)) / 2;
+        
+
+        int current_visible_index = 0;
         for (int i = 0; i < BUTTON_COUNT; i++)
         {
-            int y = menuYStart - i * (menuHeight + menuSpacing);
+
+            if (i == 1 && !canResume) continue;
+
+            int y = adjustedMenuYStart - current_visible_index * (menuHeight + menuSpacing);
+            
             if (i == hoveredIndex)
                 iSetColor(20, 250, 235);
+            else if (i == 1 && !canResume)
+                iSetColor(100, 100, 100); 
             else
                 iSetColor(255, 255, 255);
-            iText(menuX, y, menuItems[i], GLUT_BITMAP_HELVETICA_18);
+                
+            iText(menuX, y, menu_items[i], GLUT_BITMAP_HELVETICA_18);
+            current_visible_index++;
         }
     }
     else
@@ -609,7 +861,7 @@ void iDraw()
             return;
         }
 
-        if (isGameRunning && !isGameOver)
+        if (isGameRunning && !is_game_over)
         {
             
             int maxLife = 60; 
@@ -617,15 +869,15 @@ void iDraw()
             int barHeight = 25;
             int x = 20, y = 560;
 
-            // Draw border
+            // draw border
             iSetColor(0, 0, 0);
             iRectangle(x - 2, y - 2, barWidth + 4, barHeight + 4);
 
-            // Draw background
+            // draw background
             iSetColor(100, 100, 100);
             iFilledRectangle(x, y, barWidth, barHeight);
 
-            // Draw current life 
+            // draw current life 
             iSetColor(0, 200, 0);
             iFilledRectangle(x, y, (int)(barWidth * ((float)soldier_life / maxLife)), barHeight);
         }
@@ -748,23 +1000,22 @@ void iDraw()
             iText(1110, 573, "Boss HP", GLUT_BITMAP_HELVETICA_12);
             iSetColor(255, 255, 255);
         }
-        // Display the score at the top center in yellow
+        // display the score in yellow
         char scoreText[32];
         sprintf(scoreText, "SCORE : %d", gameScore);
         iSetColor(255, 255, 0);
         iText(600, 570, scoreText, GLUT_BITMAP_HELVETICA_18);
-        // Show 'GO GO -->' prompt if waiting for run after boss
         if (waitingForRunAfterBoss) {
             iSetColor(255, 0, 0);
             iText(1100, 300, "GO GO -->", GLUT_BITMAP_HELVETICA_18);
         }
 
-        // Draw ammo count at top left
+        // draw ammo count at top left
         char ammoText[32];
         sprintf(ammoText, "AMMO : %d", ammo_count);
         iSetColor(0, 200, 255);
         iText(20, 530, ammoText, GLUT_BITMAP_HELVETICA_18);
-        // Draw ammo box if visible
+        // draw ammo box if visible
         if (ammo_visible) {
             iShowLoadedImage(ammo_x, ammo_y, &ammo);
         }
@@ -773,17 +1024,36 @@ void iDraw()
 
 void iMouseMove(int mx, int my)
 {
-    if (!isGameRunning)
+    if (!isGameRunning && !isEnteringName && !show_high_score_screen && !show_credits && !show_help)
     {
         hoveredIndex = -1;
+        
+        int visibleButtons = 0;
+        for (int i = 0; i < BUTTON_COUNT; i++) {
+            if (i == 1 && !canResume) continue;
+            visibleButtons++;
+        }
+        
+        int adjustedMenuYStart = menuYStart + ((BUTTON_COUNT - visibleButtons) * (menuHeight + menuSpacing)) / 2;
+        
+        int current_visible_index = 0;
+        
         for (int i = 0; i < BUTTON_COUNT; i++)
         {
-            int y = menuYStart - i * (menuHeight + menuSpacing);
-            if (mx >= menuX && mx <= menuX + menuWidth && my >= y - 5 && my <= y + 20)
+            // skip the RESUME button if we can't resume
+            if (i == 1 && !canResume) continue;
+            
+            int y = adjustedMenuYStart - current_visible_index * (menuHeight + menuSpacing);
+            
+            // check if mouse is over this button
+            if (mx >= menuX - 10 && mx <= menuX + menuWidth + 10 && 
+                my >= y - menuHeight/2 && my <= y + menuHeight/2)
             {
                 hoveredIndex = i;
                 break;
             }
+            
+            current_visible_index++;
         }
     }
 }
@@ -793,26 +1063,34 @@ void iMouse(int button, int state, int mx, int my)
     if (!isGameRunning && button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && hoveredIndex != -1)
     {
         iPlaySound("assets/sounds/clicked.wav", false);
-        if (hoveredIndex == 0)
+        if (hoveredIndex == 0) // PLAY
         {
-            resetGameState();
+            isEnteringName = true;
+            currentPlayerName[0] = '\0';
         }
-        else if (hoveredIndex == 1)
+        else if (hoveredIndex == 1) // RESUME
         {
-            showHighScoreScreen = true;
+            if (canResume)
+            {
+                resumeGame();
+            }
         }
-        else if (hoveredIndex == 2)
+        else if (hoveredIndex == 2) // LEADERBOARD
         {
-            // Help
+            show_high_score_screen = true;
+        }
+        else if (hoveredIndex == 3) // HELP
+        {
             show_help = true;
         }
-        else if (hoveredIndex == 3)
+        else if (hoveredIndex == 4) // CREDITS
         {
-            // credit
             show_credits = true;
         }
-        else if (hoveredIndex == 4)
+        else if (hoveredIndex == 5) // EXIT
+        {
             exit(0);
+        }
     }
 
     if (isGameRunning) {
@@ -879,6 +1157,31 @@ void iMouseWheel(int dir, int mx, int my) {};
 
 void iKeyboard(unsigned char key, int state)
 {
+    if(isEnteringName) {
+        if(state == GLUT_DOWN) {
+            if(key == '\r') { 
+                if(strlen(currentPlayerName) > 0) {
+                    isEnteringName = false;
+                    resetGameState();
+                }
+                return;
+            }
+            else if(key == 8) { 
+                int len = strlen(currentPlayerName);
+                if(len > 0) currentPlayerName[len-1] = '\0';
+            }
+            else if(strlen(currentPlayerName) < MAX_NAME_LENGTH - 1) {
+                if((key >= 'a' && key <= 'z') || (key >= 'A' && key <= 'Z') || 
+                   (key >= '0' && key <= '9') || key == ' ') {
+                    int len = strlen(currentPlayerName);
+                    currentPlayerName[len] = key;
+                    currentPlayerName[len+1] = '\0';
+                }
+            }
+            return;
+        }
+        return;
+    }
 
     if (key == 'p' && state == GLUT_DOWN) {
         paused = true;
@@ -889,11 +1192,11 @@ void iKeyboard(unsigned char key, int state)
         return;
     }
 
-    if ((isGameOver || isVictory) && key == 'h' && state == GLUT_DOWN) {
+    if ((is_game_over || isVictory) && key == 'h' && state == GLUT_DOWN) {
         isGameRunning = false;
-        isGameOver = false;
+        is_game_over = false;
         isVictory = false;
-        showHighScoreScreen = false;
+        show_high_score_screen = false;
         show_credits = false;
         show_help = false;
         return;
@@ -901,8 +1204,8 @@ void iKeyboard(unsigned char key, int state)
 
     if (!isGameRunning)
     {
-        if (showHighScoreScreen && key == 27) { 
-            showHighScoreScreen = false;
+        if (show_high_score_screen && key == 27) { 
+            show_high_score_screen = false;
         }
         if (show_credits && key == 27) { 
             show_credits = false;
@@ -965,65 +1268,65 @@ void iKeyboard(unsigned char key, int state)
             iMirrorSprite(&soldier_i, HORIZONTAL); 
         }
     }
-    if (key == 'f') {
-        if (is_jumping) return;
-        if (state == GLUT_DOWN) {
-            is_firing = true;
-            is_running = false;
-            if (ammo_count > 0) {
-                ammo_count--;
-                if (left) {
-                    if (!soldier_fr.flipHorizontal) {
-                        iMirrorSprite(&soldier_fr, HORIZONTAL);
-                    }
-                    for (int i = 0; i < MAX_BULLETS; i++) {
-                        if (!bullet_fired_l[i]) {
-                            bullet_fired_l[i] = true;
-                            bullet_position_l_x[i] = soldier_position_x - 40;
-                            bullet_position_l_y[i] = 250;
+    // if (key == 'f') {
+    //     if (is_jumping) return;
+    //     if (state == GLUT_DOWN) {
+    //         is_firing = true;
+    //         is_running = false;
+    //         if (ammo_count > 0) {
+    //             ammo_count--;
+    //             if (left) {
+    //                 if (!soldier_fr.flipHorizontal) {
+    //                     iMirrorSprite(&soldier_fr, HORIZONTAL);
+    //                 }
+    //                 for (int i = 0; i < MAX_BULLETS; i++) {
+    //                     if (!bullet_fired_l[i]) {
+    //                         bullet_fired_l[i] = true;
+    //                         bullet_position_l_x[i] = soldier_position_x - 40;
+    //                         bullet_position_l_y[i] = 250;
                             
-                            break;
-                        }
-                    }
-                } else if (right) {
-                    if (soldier_fr.flipHorizontal) {
-                        iMirrorSprite(&soldier_fr, HORIZONTAL);
-                    }
-                    for (int i = 0; i < MAX_BULLETS; i++) {
-                        if (!bullet_fired_r[i]) {
-                            bullet_fired_r[i] = true;
-                            bullet_position_r_x[i] = soldier_position_x + 150;
-                            bullet_position_r_y[i] = 250;
-                            break;
-                        }
-                    }
-                } else {
-                    if (!facing_r) {
-                        iMirrorSprite(&soldier_fr, HORIZONTAL);
-                        facing_r = true;
-                    }
-                    for (int i = 0; i < MAX_BULLETS; i++) {
-                        if (!bullet_fired_r[i]) {
-                            bullet_fired_r[i] = true;
-                            bullet_position_r_x[i] = soldier_position_x + 150;
-                            bullet_position_r_y[i] = 250;
+    //                         break;
+    //                     }
+    //                 }
+    //             } else if (right) {
+    //                 if (soldier_fr.flipHorizontal) {
+    //                     iMirrorSprite(&soldier_fr, HORIZONTAL);
+    //                 }
+    //                 for (int i = 0; i < MAX_BULLETS; i++) {
+    //                     if (!bullet_fired_r[i]) {
+    //                         bullet_fired_r[i] = true;
+    //                         bullet_position_r_x[i] = soldier_position_x + 150;
+    //                         bullet_position_r_y[i] = 250;
+    //                         break;
+    //                     }
+    //                 }
+    //             } else {
+    //                 if (!facing_r) {
+    //                     iMirrorSprite(&soldier_fr, HORIZONTAL);
+    //                     facing_r = true;
+    //                 }
+    //                 for (int i = 0; i < MAX_BULLETS; i++) {
+    //                     if (!bullet_fired_r[i]) {
+    //                         bullet_fired_r[i] = true;
+    //                         bullet_position_r_x[i] = soldier_position_x + 150;
+    //                         bullet_position_r_y[i] = 250;
                             
-                            break;
-                        }
-                    }
-                }
-                zombie_should_move = true;
-                if (ammo_count == 0 && !ammo_visible) {
-                    spawnAmmoBox();
-                }
-            }
-        } else if (state == GLUT_UP) {
-            is_firing = false;
-            is_running = false;
-            iSetSpritePosition(&soldier_i, soldier_position_x, soldier_position_y);
-        }
-        return;
-    }
+    //                         break;
+    //                     }
+    //                 }
+    //             }
+    //             zombie_should_move = true;
+    //             if (ammo_count == 0 && !ammo_visible) {
+    //                 spawnAmmoBox();
+    //             }
+    //         }
+    //     } else if (state == GLUT_UP) {
+    //         is_firing = false;
+    //         is_running = false;
+    //         iSetSpritePosition(&soldier_i, soldier_position_x, soldier_position_y);
+    //     }
+    //     return;
+    // }
     if (key == 'w' && !is_jumping) {
         is_jumping = true;
         is_running = false;
@@ -1063,7 +1366,7 @@ void iSpecialKeyboard(int key, int state)
     if(key == GLUT_KEY_HOME)
     {
         isGameRunning = false;
-        isGameOver = false;
+        is_game_over = false;
         gameOverTimer = 0;
         soldier_life = 60;
         gameScore = 0;
@@ -1089,7 +1392,6 @@ void iSpecialKeyboard(int key, int state)
         exit(0);
     }
 
-    // Handle key up: soldier goes idle, background stops (for arrow keys)
     if (state == GLUT_UP) {
         is_running = false;
         bg_flag = 0;
@@ -1099,7 +1401,6 @@ void iSpecialKeyboard(int key, int state)
         return;
     }
 
-    // Arrow key held: set movement flags, actual movement happens in iAnim
     if (key == GLUT_KEY_LEFT && state == GLUT_DOWN)
     {
         left = true;
@@ -1134,12 +1435,10 @@ void iSpecialKeyboard(int key, int state)
     }
     if (key == GLUT_KEY_DOWN && state == GLUT_DOWN)
     {
-        // Mimic 's' key
         iKeyboard('s',GLUT_DOWN);
     }
     if (key == GLUT_KEY_UP && state == GLUT_DOWN)
     {
-        // Mimic 'w' key
         iKeyboard('w',GLUT_DOWN);
     }
 }
@@ -1147,7 +1446,7 @@ void iSpecialKeyboard(int key, int state)
 
 
 void boss_update() {
-    if (!boss_phase || !boss_alive || isGameOver) return;
+    if (!boss_phase || !boss_alive || is_game_over) return;
     bool should_mirror = (soldier_position_x < boss_x);
     if (should_mirror != bossMirrored) {
         iMirrorSprite(&boss_i, HORIZONTAL);
@@ -1243,15 +1542,12 @@ void iAnim()
 {
     if (!isGameRunning || paused)
         return;
-    // JUMP UPDATE
     updateJump();
     if (!soldier_is_dead)
     {
         iAnimateSprite(&soldier_i);
-        // Move soldier if arrow key is held
         if (is_running && !is_jumping)
         {
-            // Only allow screen wrapping if boss/second boss is not present
             int screen_middle = 430;
             if (!(boss_phase && boss_alive) && !second_boss_alive) {
                 if (right) {
@@ -1274,7 +1570,6 @@ void iAnim()
                             soldier_fr.x += move_dist;
                         } else if (soldier_position_x == screen_middle) {
                             iWrapImage(&bg, -22);
-                            // Wrap medicine and ammo boxes with the background
                             if (medicine_visible) {
                                 medicine_x -= 22;
                             }
@@ -1282,7 +1577,6 @@ void iAnim()
                                 ammo_x -= 22;
                             }
                         }
-                        // Clamp soldier to 500 if it ever exceeds
                         if (soldier_position_x > screen_middle) {
                             int diff = soldier_position_x - screen_middle;
                             soldier_position_x = screen_middle;
@@ -1305,7 +1599,6 @@ void iAnim()
                     gameScore += 1;
                 }
             } else {
-                // Boss/second boss present: allow full movement
                 if (right && soldier_position_x <= 1200) {
                     bool blocked = false;
                     for (int i = 0; i < total_zombies; i++) {
@@ -1341,9 +1634,7 @@ void iAnim()
             }
             iAnimateSprite(&soldier_r);
         }
-        // Handle continuous mouse fire
         static int mouse_fire_delay = 0;
-        // Continuous fire for mouse
         if (mouse_fire_held && !is_jumping && ammo_count > 0) {
             mouse_fire_delay++;
             if (mouse_fire_delay >= 1) {
@@ -1378,7 +1669,6 @@ void iAnim()
         } else {
             mouse_fire_delay = 2;
         }
-        // Continuous fire for 'f' key
         static int f_key_fire_delay = 0;
         if (is_firing && !is_jumping && ammo_count > 0) {
             f_key_fire_delay++;
@@ -1436,7 +1726,6 @@ void iAnim()
         } else {
             f_key_fire_delay = 2;
         }
-        // If not firing, show idle sprite (prevents stuck fire pose)
         if (!is_firing && !is_jumping) {
             iSetSpritePosition(&soldier_i, soldier_position_x, soldier_position_y);
         }
@@ -1445,7 +1734,6 @@ void iAnim()
     }
     else
     {
-        // Always show death sprite at last soldier position
         iSetSpritePosition(&soldier_d, soldier_position_x, soldier_position_y);
         iAnimateSprite(&soldier_d);
         soldier_death_frame++;
@@ -1454,13 +1742,13 @@ void iAnim()
             gameOverTimer++;
             if (gameOverTimer >= 10)
             {
-                isGameOver = true;
+                is_game_over = true;
                 isGameRunning = false;
             }
         }
     }
 
-    if (boss_phase && boss_alive && !isGameOver)
+    if (boss_phase && boss_alive && !is_game_over)
     {
         boss_update(); 
         if (boss_state == 0)
@@ -1473,7 +1761,7 @@ void iAnim()
             iAnimateSprite(&boss_ca);
     }
 
-    if (!isGameOver && !boss_phase)
+    if (!is_game_over && !boss_phase)
     {
         for (int i = 0; i < total_zombies; i++)
         {
@@ -1696,7 +1984,6 @@ void bullet_change_position()
                 }
                 if (boss_alive &&  bullet_position_r_x[i] > boss_x+170 && soldier_position_x < boss_x+150 )
                 {
-                    // Boss hit detection
                     bullet_fired_r[i] = false;
                     bullet_position_r_x[i] = -100;
                     boss_health--;
@@ -1705,7 +1992,7 @@ void bullet_change_position()
                         gameScore += 1000; 
                         boss_alive = false;
                         isVictory = true;
-                        isGameOver = true;
+                        is_game_over = true;
                         isGameRunning = false;
                         return;
                     }
@@ -1729,7 +2016,7 @@ void bullet_change_position()
                         gameScore += 1000; 
                         boss_alive = false;
                         isVictory = true;
-                        isGameOver = true;
+                        is_game_over = true;
                         isGameRunning = false;
                         return;
                     }
@@ -1890,11 +2177,6 @@ void bullet_change_position()
     }
 
     
-    if (ammo_visible && checkCollision(soldier_position_x, soldier_position_y, 100, 100, ammo_x, ammo_y, 50, 50)) {
-        ammo_count = 100;
-        ammo_visible = false;
-    }
-
     if (zombie_should_move)
     {
         for (int i = 0; i < total_zombies; i++)
@@ -1907,6 +2189,16 @@ void bullet_change_position()
                 zombie_a[i].x -= 40;
             }
         }
+    }
+}
+
+void checkAmmoPickup() {
+    if (!isGameRunning || paused || is_game_over)
+        return;
+        
+    if (ammo_visible && checkCollision(soldier_position_x, soldier_position_y, 100, 100, ammo_x, ammo_y, 50, 50)) {
+        ammo_count = 100;
+        ammo_visible = false;
     }
 }
 
@@ -1939,14 +2231,19 @@ void update_boss_state()
 int main(int argc, char *argv[])
 {
     glutInit(&argc, argv);
-    loadHighScore();
+    loadLeaderboard();
+    loadGameState(); 
     loadResources();
     iInitializeSound();
+    atexit(cleanup);
+    glutCloseFunc(cleanup);
     iSetTimer(150, iAnim);
     iSetTimer(50, bullet_change_position);
     iSetTimer(100, zombieAttackUpdate);
     iSetTimer(100, medicineTimerUpdate);
     iSetTimer(10, second_bossSpawnTimerUpdate);
+    iSetTimer(1, playZombieAmbience);
+    iSetTimer(50, checkAmmoPickup);
     iOpenWindow(1400, 600, "Combined Game");
     return 0;
 }
