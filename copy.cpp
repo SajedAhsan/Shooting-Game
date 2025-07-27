@@ -63,9 +63,14 @@ int game_over_timer = 0;
 bool is_victory = false; 
 bool paused = false; 
 
+// settings variables
+bool zombie_sound_enabled = true;
+bool bullet_sound_enabled = true;
+bool show_settings = false;
+
 // menu variables
-#define BUTTON_COUNT 6
-const char *menu_items[BUTTON_COUNT] = {"PLAY", "RESUME", "LEADERBOARD", "HELP", "CREDITS", "EXIT"};
+#define BUTTON_COUNT 7
+const char *menu_items[BUTTON_COUNT] = {"PLAY", "RESUME", "LEADERBOARD", "SETTINGS", "HELP", "CREDITS", "EXIT"};
 int menu_y_start = 350;
 int menu_x = 550;
 int menu_width = 150;
@@ -162,7 +167,7 @@ bool ammo_visible = false;
 // second_boss variables
 Image second_boss_idle[8], second_boss_attack[7], second_boss_dead[10], second_boss_fire[11], second_boss_walk[8],second_boss_cattack[11];
 Sprite second_boss_spr_idle, second_boss_spr_attack, second_boss_spr_dead, second_boss_spr_fire, second_boss_spr_walk,second_boss_spr_cattack;
-int second_boss_x = 1100, second_boss_y = 128;
+int second_boss_x = 900, second_boss_y = 128;
 bool second_boss_alive = false;
 bool second_boss_attacking = false;
 int second_boss_life = 40; 
@@ -182,7 +187,7 @@ bool second_boss_fire_move = false;
 // boss sprite variables
 Image boss_idle[7], boss_run[8], boss_attack[8], boss_dead[6], boss_cattack[14];
 Sprite boss_i, boss_r, boss_a, boss_d, boss_ca;
-int boss_x = 1100, boss_y = 128;
+int boss_x = 950, boss_y = 128;
 int boss_state = 0; // 0: idle, 1: running, 2: attacking, 3: dead 4: close attack
 int boss_frame_timer = 0;
 bool boss_alive = false;
@@ -274,10 +279,10 @@ void resetGameState() {
         attack_frame_delay[i] = 7;
         zombie_life[i] = 5;
     }
-    boss_x = 1100;
+    boss_x = 950;
     boss_y = 128;
     boss_health = boss_health_max;
-    second_boss_x = 1100;
+    second_boss_x = 900;
     second_boss_y = 128;
     second_boss_life = 40;
     for (int i = 0; i < MAX_BULLETS; i++) {
@@ -349,7 +354,7 @@ void spawnZombies()
     }
     
     //zombie sound is playing when spawning new zombies
-    if (!is_zombie_sound_playing) {
+    if (!is_zombie_sound_playing && zombie_sound_enabled) {
         zombie_sound_channel = iPlaySound("assets/sounds/zombie.wav", true);
         is_zombie_sound_playing = true;
     }
@@ -357,7 +362,7 @@ void spawnZombies()
 
 // function to handle zombie sounds
 void playZombieAmbience() {
-    if (!is_game_running || paused || is_game_over || boss_phase) {
+    if (!is_game_running || paused || is_game_over || boss_phase || !zombie_sound_enabled) {
         if (is_zombie_sound_playing) {
             iStopSound(zombie_sound_channel);
             is_zombie_sound_playing = false;
@@ -411,7 +416,7 @@ void second_bossSpawnTimerUpdate()
         { 
             second_boss_alive = true;
             second_boss_spawned = true;
-            second_boss_x = 1100;
+            second_boss_x = 900;
             second_boss_life = 40;
             second_boss_dead_animation_done = false;
             iSetSpritePosition(&second_boss_spr_idle, second_boss_x, second_boss_y);
@@ -649,7 +654,10 @@ void resumeGame() {
 }
 
 void cleanup() {
-    saveGameState();
+    // Only save game state if the game is actively running and not over
+    if (is_game_running && !is_game_over && !is_victory && !soldier_is_dead) {
+        saveGameState();
+    }
 }
 
 void loadLeaderboard() {
@@ -777,12 +785,12 @@ void iDraw()
         remove(SAVE_FILE);
         
         if (is_victory) {
-            iShowLoadedImage(50, 50, &victory);
+            iShowLoadedImage(0, 0, &victory);
         } else {
             iShowLoadedImage(50, 50, &gameover);
         }
         iSetColor(255, 255, 0);
-        iText(600, 80, "Press 'h' to return main menu", GLUT_BITMAP_HELVETICA_18);
+        iText(500, 80, "Press 'h' to return main menu", GLUT_BITMAP_HELVETICA_18);
         iSetColor(255, 255, 255);
         return;
     }
@@ -807,6 +815,39 @@ void iDraw()
                 iText(600, 450-i*40, scoreText, GLUT_BITMAP_HELVETICA_18);
             }
             iSetColor(255,255,255);
+            iText(600, 200, "Press ESC to return", GLUT_BITMAP_HELVETICA_12);
+            return;
+        }
+        if(show_settings)
+        {
+            iSetColor(255, 255, 0);
+            iText(600, 500, "SETTINGS", GLUT_BITMAP_HELVETICA_18);
+            
+            // Zombie sound setting
+            iSetColor(255, 255, 255);
+            iText(500, 400, "Zombie Sound:", GLUT_BITMAP_HELVETICA_18);
+            if (zombie_sound_enabled) {
+                iSetColor(0, 255, 0);
+                iText(700, 400, "ON", GLUT_BITMAP_HELVETICA_18);
+            } else {
+                iSetColor(255, 0, 0);
+                iText(700, 400, "OFF", GLUT_BITMAP_HELVETICA_18);
+            }
+            
+            // Bullet sound setting
+            iSetColor(255, 255, 255);
+            iText(500, 350, "Bullet Sound:", GLUT_BITMAP_HELVETICA_18);
+            if (bullet_sound_enabled) {
+                iSetColor(0, 255, 0);
+                iText(700, 350, "ON", GLUT_BITMAP_HELVETICA_18);
+            } else {
+                iSetColor(255, 0, 0);
+                iText(700, 350, "OFF", GLUT_BITMAP_HELVETICA_18);
+            }
+            
+            iSetColor(255, 255, 255);
+            iText(550, 280, "Press '1' to toggle Zombie Sound", GLUT_BITMAP_HELVETICA_12);
+            iText(550, 250, "Press '2' to toggle Bullet Sound", GLUT_BITMAP_HELVETICA_12);
             iText(600, 200, "Press ESC to return", GLUT_BITMAP_HELVETICA_12);
             return;
         }
@@ -1024,7 +1065,7 @@ void iDraw()
 
 void iMouseMove(int mx, int my)
 {
-    if (!is_game_running && !is_entering_name && !show_high_score_screen && !show_credits && !show_help)
+    if (!is_game_running && !is_entering_name && !show_high_score_screen && !show_credits && !show_help && !show_settings)
     {
         hovered_index = -1;
         
@@ -1079,15 +1120,19 @@ void iMouse(int button, int state, int mx, int my)
         {
             show_high_score_screen = true;
         }
-        else if (hovered_index == 3) // HELP
+        else if (hovered_index == 3) // SETTINGS
+        {
+            show_settings = true;
+        }
+        else if (hovered_index == 4) // HELP
         {
             show_help = true;
         }
-        else if (hovered_index == 4) // CREDITS
+        else if (hovered_index == 5) // CREDITS
         {
             show_credits = true;
         }
-        else if (hovered_index == 5) // EXIT
+        else if (hovered_index == 6) // EXIT
         {
             exit(0);
         }
@@ -1204,6 +1249,23 @@ void iKeyboard(unsigned char key, int state)
 
     if (!is_game_running)
     {
+        if (show_settings) {
+            if (key == 27) { // ESC key to exit settings
+                show_settings = false;
+            }
+            else if (key == '1' && state == GLUT_DOWN) { // Toggle zombie sound
+                zombie_sound_enabled = !zombie_sound_enabled;
+                if (!zombie_sound_enabled && zombie_sound_channel != -1) {
+                    iStopSound(zombie_sound_channel);
+                    zombie_sound_channel = -1;
+                }
+            }
+            else if (key == '2' && state == GLUT_DOWN) { // Toggle bullet sound
+                bullet_sound_enabled = !bullet_sound_enabled;
+            }
+            return;
+        }
+        
         if (show_high_score_screen && key == 27) { 
             show_high_score_screen = false;
         }
@@ -1241,14 +1303,15 @@ void iKeyboard(unsigned char key, int state)
         left = false;
         bg_flag = 1;
         zombie_should_move = true;
-        facing_r = true;
+        
         if (soldier_r.flipHorizontal)
         {
             iMirrorSprite(&soldier_r, HORIZONTAL);
             iMirrorSprite(&soldier_fr, HORIZONTAL);
             iMirrorSprite(&soldier_i, HORIZONTAL);
-            
         }
+        facing_r = true; // Always set facing right when moving right
+        
         if (waitingForRunAfterBoss) {
             waitingForRunAfterBoss = false;
         }
@@ -1260,13 +1323,14 @@ void iKeyboard(unsigned char key, int state)
         left = true;
         right = false;
         bg_flag = 2;
-        facing_r = false;
+        
         if (!soldier_r.flipHorizontal)
         {
             iMirrorSprite(&soldier_r, HORIZONTAL);
             iMirrorSprite(&soldier_fr, HORIZONTAL);
             iMirrorSprite(&soldier_i, HORIZONTAL); 
         }
+        facing_r = false; // Always set facing left when moving left
     }
     if (key == 'w' && !is_jumping) {
         is_jumping = true;
@@ -1275,19 +1339,38 @@ void iKeyboard(unsigned char key, int state)
     }
     if (!left && !right && is_firing)
     {
-        if (!facing_r)
+        // When firing without movement, use current facing direction
+        // Only mirror if the fire sprite doesn't match current facing direction
+        if (!facing_r && !soldier_fr.flipHorizontal)
         {
             iMirrorSprite(&soldier_fr, HORIZONTAL);
-            facing_r = true;
         }
-        for (int i = 0; i < MAX_BULLETS; i++)
+        else if (facing_r && soldier_fr.flipHorizontal)
         {
-            if (!bullet_fired_r[i])
+            iMirrorSprite(&soldier_fr, HORIZONTAL);
+        }
+        
+        if (facing_r) {
+            for (int i = 0; i < MAX_BULLETS; i++)
             {
-                bullet_fired_r[i] = true;
-                bullet_position_r_x[i] = soldier_position_x + 150;
-                bullet_position_r_y[i] = 250;
-                break;
+                if (!bullet_fired_r[i])
+                {
+                    bullet_fired_r[i] = true;
+                    bullet_position_r_x[i] = soldier_position_x + 150;
+                    bullet_position_r_y[i] = 250;
+                    break;
+                }
+            }
+        } else {
+            for (int i = 0; i < MAX_BULLETS; i++)
+            {
+                if (!bullet_fired_l[i])
+                {
+                    bullet_fired_l[i] = true;
+                    bullet_position_l_x[i] = soldier_position_x - 40;
+                    bullet_position_l_y[i] = 250;
+                    break;
+                }
             }
         }
     }
@@ -1414,7 +1497,12 @@ void boss_update() {
         fireball_queued = false;
         if (boss_cattack_frame % 14 == 1 && !soldier_is_dead) {
             if (soldier_life > 0) soldier_life -= 5;
-            if (soldier_life <= 0) soldier_is_dead = true;
+            if (soldier_life <= 0) {
+                soldier_is_dead = true;
+                can_resume = false;
+                saved_state.valid = false;
+                remove(SAVE_FILE);
+            }
         }
     } else {
         boss_cattack_frame = 0;
@@ -1465,7 +1553,12 @@ void boss_update() {
             boss_fire_active = false;
             boss_fire_x = -1000;
             if (soldier_life > 0) soldier_life -= 7;
-            if (soldier_life <= 0) soldier_is_dead = true;
+            if (soldier_life <= 0) {
+                soldier_is_dead = true;
+                can_resume = false;
+                saved_state.valid = false;
+                remove(SAVE_FILE);
+            }
         } else if (boss_fire_x < -100 || boss_fire_x > 1500) {
             boss_fire_active = false;
             boss_fire_x = -1000;
@@ -1605,13 +1698,31 @@ void iAnim()
             mouse_fire_delay++;
             if (mouse_fire_delay >= 1) {
                 ammo_count--;
-                if (facing_r) {
+                // Use current movement direction or last facing direction
+                bool shoot_right = facing_r;
+                if (left) {
+                    shoot_right = false;
+                    if (facing_r) {
+                        iMirrorSprite(&soldier_fr, HORIZONTAL);
+                        facing_r = false;
+                    }
+                } else if (right) {
+                    shoot_right = true;
+                    if (!facing_r) {
+                        iMirrorSprite(&soldier_fr, HORIZONTAL);
+                        facing_r = true;
+                    }
+                }
+                
+                if (shoot_right) {
                     for (int i = 0; i < MAX_BULLETS; i++) {
                         if (!bullet_fired_r[i]) {
                             bullet_fired_r[i] = true;
                             bullet_position_r_x[i] = soldier_position_x + 150;
                             bullet_position_r_y[i] = 250;
-                            iPlaySound("assets/sounds/shoot.wav", false);
+                            if (bullet_sound_enabled) {
+                                iPlaySound("assets/sounds/shoot.wav", false);
+                            }
                             break;
                         }
                     }
@@ -1621,7 +1732,9 @@ void iAnim()
                             bullet_fired_l[i] = true;
                             bullet_position_l_x[i] = soldier_position_x - 40;
                             bullet_position_l_y[i] = 250;
-                            iPlaySound("assets/sounds/shoot.wav", false);
+                            if (bullet_sound_enabled) {
+                                iPlaySound("assets/sounds/shoot.wav", false);
+                            }
                             break;
                         }
                     }
@@ -1650,7 +1763,9 @@ void iAnim()
                             bullet_fired_l[i] = true;
                             bullet_position_l_x[i] = soldier_position_x - 40;
                             bullet_position_l_y[i] = 250;
-                            iPlaySound("assets/sounds/shoot.wav", false);
+                            if (bullet_sound_enabled) {
+                                iPlaySound("assets/sounds/shoot.wav", false);
+                            }
                             break;
                         }
                     }
@@ -1664,22 +1779,43 @@ void iAnim()
                             bullet_fired_r[i] = true;
                             bullet_position_r_x[i] = soldier_position_x + 150;
                             bullet_position_r_y[i] = 250;
-                            iPlaySound("assets/sounds/shoot.wav", false);
+                            if (bullet_sound_enabled) {
+                                iPlaySound("assets/sounds/shoot.wav", false);
+                            }
                             break;
                         }
                     }
                 } else {
-                    if (!facing_r) {
-                        iMirrorSprite(&soldier_fr, HORIZONTAL);
-                        facing_r = true;
-                    }
-                    for (int i = 0; i < MAX_BULLETS; i++) {
-                        if (!bullet_fired_r[i]) {
-                            bullet_fired_r[i] = true;
-                            bullet_position_r_x[i] = soldier_position_x + 150;
-                            bullet_position_r_y[i] = 250;
-                            iPlaySound("assets/sounds/shoot.wav", false);
-                            break;
+                    // When no movement keys are pressed, use current facing direction
+                    if (facing_r) {
+                        if (soldier_fr.flipHorizontal) {
+                            iMirrorSprite(&soldier_fr, HORIZONTAL);
+                        }
+                        for (int i = 0; i < MAX_BULLETS; i++) {
+                            if (!bullet_fired_r[i]) {
+                                bullet_fired_r[i] = true;
+                                bullet_position_r_x[i] = soldier_position_x + 150;
+                                bullet_position_r_y[i] = 250;
+                                if (bullet_sound_enabled) {
+                                    iPlaySound("assets/sounds/shoot.wav", false);
+                                }
+                                break;
+                            }
+                        }
+                    } else {
+                        if (!soldier_fr.flipHorizontal) {
+                            iMirrorSprite(&soldier_fr, HORIZONTAL);
+                        }
+                        for (int i = 0; i < MAX_BULLETS; i++) {
+                            if (!bullet_fired_l[i]) {
+                                bullet_fired_l[i] = true;
+                                bullet_position_l_x[i] = soldier_position_x - 40;
+                                bullet_position_l_y[i] = 250;
+                                if (bullet_sound_enabled) {
+                                    iPlaySound("assets/sounds/shoot.wav", false);
+                                }
+                                break;
+                            }
                         }
                     }
                 }
@@ -1752,6 +1888,9 @@ void iAnim()
                             if (soldier_life <= 0)
                             {
                                 soldier_is_dead = true;
+                                can_resume = false;
+                                saved_state.valid = false;
+                                remove(SAVE_FILE);
                             }
                         }
                     }
@@ -1814,8 +1953,12 @@ void iAnim()
                     second_boss_attack_timer = 0;
                     if (soldier_life > 0)
                         soldier_life -= 7;
-                    if (soldier_life <= 0)
+                    if (soldier_life <= 0) {
                         soldier_is_dead = true;
+                        can_resume = false;
+                        saved_state.valid = false;
+                        remove(SAVE_FILE);
+                    }
                 }
             }
             else
@@ -1859,8 +2002,12 @@ void iAnim()
                         second_boss_fire_active = false;
                         if (soldier_life > 0)
                             soldier_life -= 9;
-                        if (soldier_life <= 0)
+                        if (soldier_life <= 0) {
                             soldier_is_dead = true;
+                            can_resume = false;
+                            saved_state.valid = false;
+                            remove(SAVE_FILE);
+                        }
                     }
                     else if (second_boss_fire_x < -100)
                     {
@@ -1904,7 +2051,7 @@ void iAnim()
                         iSetSpritePosition(&second_boss_spr_dead, second_boss_x, second_boss_y);
                         iSetSpritePosition(&second_boss_spr_walk, second_boss_x, second_boss_y);
                         iSetSpritePosition(&second_boss_spr_fire, second_boss_x, second_boss_y);
-                        boss_x = 1100;
+                        boss_x = 950;
                         boss_y = 128;
                         boss_state = 0;
                         boss_frame_timer = 0;
@@ -1970,6 +2117,9 @@ void bullet_change_position()
                         is_victory = true;
                         is_game_over = true;
                         is_game_running = false;
+                        can_resume = false;
+                        saved_state.valid = false;
+                        remove(SAVE_FILE);
                         return;
                     }
                 }
@@ -1994,6 +2144,9 @@ void bullet_change_position()
                         is_victory = true;
                         is_game_over = true;
                         is_game_running= false;
+                        can_resume = false;
+                        saved_state.valid = false;
+                        remove(SAVE_FILE);
                         return;
                     }
                 }
@@ -2137,7 +2290,7 @@ void bullet_change_position()
                     iSetSpritePosition(&second_boss_spr_fire, second_boss_x, second_boss_y);
                     iSetSpritePosition(&second_boss_spr_cattack, second_boss_x, second_boss_y);
 
-                    boss_x = 1100;
+                    boss_x = 950;
                     boss_y = 128;
                     boss_state = 0;
                     boss_frame_timer = 0;
@@ -2220,6 +2373,6 @@ int main(int argc, char *argv[])
     iSetTimer(10, second_bossSpawnTimerUpdate);
     iSetTimer(1, playZombieAmbience);
     iSetTimer(50, checkAmmoPickup);
-    iOpenWindow(1200, 600, "Combined Game");
+    iOpenWindow(1200, 600, "Zombie Shooter");
     return 0;
 }
