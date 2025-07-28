@@ -4,8 +4,9 @@
 <p>In this action game, a brave soldier runs through a spooky forest. Zombies and witches suddenly appear and try to attack him. The soldier uses a gun to fight back, but he must collect bullets and medicine to stay alive.</p>
 <p>At the end, a powerful wizard shows up as the final boss. The wizard shoots fire balls and flames, and the soldier has to beat him in an exciting battle.</p>
 <h2>Demo :</h2> <p>https://www.youtube.com/watch?v=oGfNHFuEkbM</p>
-<h2>Game Showcase</h2>
+<h1>Game Showcase</h1>
 <h2>Main Menu</h2>
+<img src="edit/Mainmenu.png" alt="Diagram" width="300">
 <h2>Leaderboard</h2>
 <h2>Settings</h2>
 <h2>Help</h2>
