@@ -13,6 +13,8 @@
 <h2>In Game Highlights</h2>
 <h2>Victory</h2>
 <h2>Gameover</h2>
+<h2>Supervisor's Information</h2>
+<p>Mahir Labib Dihan<br>Adjunct Lecturer, Department of CSE at Bangladesh University of Engineering and Technology (BUET)<br>mahirlabibdihan@gmail.com</p>
 
 
 
