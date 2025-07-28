@@ -9,7 +9,7 @@
 <p align="center">
 <img src="edit/Mainmenu.png" alt="Diagram" width="600" height="500">
 </p>
-<p>If player cut the game or return to home </p>
+<p><bold>If the player exits or returns to the home screen during gameplay</bold></p>
 <p align="center">
 <img src="edit/resume in menu.png" alt="Diagram" width="600" height="500">
 </p>
