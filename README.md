@@ -7,7 +7,7 @@
 <h1>Game Showcase</h1>
 <h2>Main Menu</h2>
 <p align="center">
-<img src="edit/Mainmenu.png" alt="Diagram" width="600" height="400">
+<img src="edit/Mainmenu.png" alt="Diagram" width="600" height="500">
 </p>
 <h2>Leaderboard</h2>
 <h2>Settings</h2>
