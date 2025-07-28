@@ -9,6 +9,9 @@
 <p align="center">
 <img src="edit/Mainmenu.png" alt="Diagram" width="600" height="500">
 </p>
+<p align="center">
+<img src="edit/resume in menu.png" alt="Diagram" width="600" height="500">
+</p>
 <h2>Leaderboard</h2>
 <p align="center">
 <img src="edit/Leaderboard.png" alt="Diagram" width="600" height="500">
@@ -25,7 +28,7 @@
 <p align="center">
 <img src="edit/credits.png" alt="Diagram" width="600" height="500">
 </p>
-<h2>In Game Highlights</h2>
+<h2>In Game Highlights</h2>   
 <p align="center">
 <img src="edit/Gameplay1.png" alt="Diagram" width="600" height="500">
 </p>
@@ -34,6 +37,9 @@
 </p>
 <p align="center">
 <img src="edit/Gameplay3.png" alt="Diagram" width="600" height="500">
+</p>
+<p align="center">
+<img src="edit/Pause and resume.png" alt="Diagram" width="600" height="500">
 </p>
 <p align="center">
 <img src="edit/Gameplay4.png" alt="Diagram" width="600" height="500">
