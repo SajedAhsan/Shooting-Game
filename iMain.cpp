@@ -1249,9 +1249,6 @@ void iKeyboard(unsigned char key, int state)
             iMirrorSprite(&soldier_i, HORIZONTAL);
             
         }
-        if (waitingForRunAfterBoss) {
-            waitingForRunAfterBoss = false;
-        }
     }
     if (key == 'a' && state == GLUT_DOWN)
     {
@@ -1429,9 +1426,6 @@ void iSpecialKeyboard(int key, int state)
             iMirrorSprite(&soldier_i, HORIZONTAL);
             facing_r = true;
         }
-        if (waitingForRunAfterBoss) {
-            waitingForRunAfterBoss = false;
-        }
     }
     if (key == GLUT_KEY_DOWN && state == GLUT_DOWN)
     {
@@ -1549,7 +1543,81 @@ void iAnim()
         if (is_running && !is_jumping)
         {
             int screen_middle = 430;
-            if (!(boss_phase && boss_alive) && !second_boss_alive) {
+            int transition_target = 450; // Target position for waitingForRunAfterBoss transition
+            
+            // Special handling for waitingForRunAfterBoss state
+            if (waitingForRunAfterBoss) {
+                if (right) {
+                    if (soldier_position_x > transition_target) {
+                        // Soldier is beyond 450 pixels, move with faster scrolling and bring soldier down
+                        int fast_scroll_speed = 70; // Even slower screen scrolling
+                        int soldier_move_speed = 30; // Faster soldier trailing speed
+                        
+                        // Move soldier towards target position (450)
+                        int soldier_move_dist = soldier_move_speed;
+                        if (soldier_position_x - soldier_move_dist < transition_target) {
+                            soldier_move_dist = soldier_position_x - transition_target;
+                        }
+                        soldier_position_x -= soldier_move_dist;
+                        soldier_r.x -= soldier_move_dist;
+                        soldier_i.x -= soldier_move_dist;
+                        soldier_fr.x -= soldier_move_dist;
+                        
+                        // Fast screen scrolling
+                        iWrapImage(&bg, -fast_scroll_speed);
+                        if (medicine_visible) {
+                            medicine_x -= fast_scroll_speed;
+                        }
+                        if (ammo_visible) {
+                            ammo_x -= fast_scroll_speed;
+                        }
+                        
+                        zombie_should_move = true;
+                        gameScore += 2; // Bonus score for fast movement
+                    } else {
+                        // Soldier has reached 450 pixels or below, apply normal logic and clear flag
+                        waitingForRunAfterBoss = false;
+                        // Apply normal movement logic for this frame
+                        if (soldier_position_x < screen_middle) {
+                            int move_dist = 22;
+                            if (soldier_position_x + move_dist > screen_middle)
+                                move_dist = screen_middle - soldier_position_x;
+                            soldier_position_x += move_dist;
+                            soldier_r.x += move_dist;
+                            soldier_i.x += move_dist;
+                            soldier_fr.x += move_dist;
+                        } else if (soldier_position_x == screen_middle) {
+                            iWrapImage(&bg, -22);
+                            if (medicine_visible) {
+                                medicine_x -= 22;
+                            }
+                            if (ammo_visible) {
+                                ammo_x -= 22;
+                            }
+                        }
+                        if (soldier_position_x > screen_middle) {
+                            int diff = soldier_position_x - screen_middle;
+                            soldier_position_x = screen_middle;
+                            soldier_r.x -= diff;
+                            soldier_i.x -= diff;
+                            soldier_fr.x -= diff;
+                        }
+                        zombie_should_move = true;
+                        gameScore += 1;
+                    }
+                }
+                if (left && soldier_position_x > 0) {
+                    int move_dist = 22;
+                    if (soldier_position_x - move_dist < 0)
+                        move_dist = soldier_position_x;
+                    soldier_position_x -= move_dist;
+                    soldier_r.x -= move_dist;
+                    soldier_i.x -= move_dist;
+                    soldier_fr.x -= move_dist;
+                    gameScore += 1;
+                }
+            }
+            else if (!(boss_phase && boss_alive) && !second_boss_alive) {
                 if (right) {
                     bool blocked = false;
                     for (int i = 0; i < total_zombies; i++) {
@@ -1624,13 +1692,6 @@ void iAnim()
                     soldier_fr.x -= 22;
                     gameScore += 1;
                 }
-            }
-            if (left && soldier_position_x != 0) {
-                soldier_position_x -= 22;
-                soldier_r.x -= 22;
-                soldier_i.x -= 22;
-                soldier_fr.x -= 22;
-                gameScore += 1;
             }
             iAnimateSprite(&soldier_r);
         }
