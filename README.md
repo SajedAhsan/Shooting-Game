@@ -10,12 +10,33 @@
 <img src="edit/Mainmenu.png" alt="Diagram" width="600" height="500">
 </p>
 <h2>Leaderboard</h2>
+<p align="center">
+<img src="edit/Leaderboard.png" alt="Diagram" width="600" height="500">
+</p>
 <h2>Settings</h2>
+<p align="center">
+<img src="edit/Settings.png" alt="Diagram" width="600" height="500">
+</p>
 <h2>Help</h2>
+<p align="center">
+<img src="edit/help.png" alt="Diagram" width="600" height="500">
+</p>
 <h2>Credits</h2>
+<p align="center">
+<img src="edit/credits.png" alt="Diagram" width="600" height="500">
+</p>
 <h2>In Game Highlights</h2>
+<p align="center">
+<img src="edit/Leaderboard.png" alt="Diagram" width="600" height="500">
+</p>
 <h2>Victory</h2>
+<p align="center">
+<img src="edit/victory.png" alt="Diagram" width="600" height="500">
+</p>
 <h2>Gameover</h2>
+<p align="center">
+<img src="edit/gameover.png" alt="Diagram" width="600" height="500">
+</p>
 <h2>Our Supervisor</h2>
 <p>Mahir Labib Dihan<br>Adjunct Lecturer, Department of CSE at Bangladesh University of Engineering and Technology (BUET)<br>mahirlabibdihan@gmail.com</p>
 
