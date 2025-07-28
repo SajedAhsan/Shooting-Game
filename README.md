@@ -6,7 +6,9 @@
 <h2>Demo :</h2> <p>https://www.youtube.com/watch?v=oGfNHFuEkbM</p>
 <h1>Game Showcase</h1>
 <h2>Main Menu</h2>
-<img src="edit/Mainmenu.png" alt="Diagram" width="300">
+<p align="center">
+<img src="edit/Mainmenu.png" alt="Diagram" width="600" height="400">
+</p>
 <h2>Leaderboard</h2>
 <h2>Settings</h2>
 <h2>Help</h2>
