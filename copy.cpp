@@ -1584,15 +1584,14 @@ void iAnim()
         if (is_running && !is_jumping)
         {
             const int screen_middle = 430;
-            const int right_boundary = 1200; 
+            const int right_boundary = 1050; 
             const int left_boundary = 0;
             
-            // first check if movement would exceed boundaries
             if (right && soldier_position_x >= right_boundary) {
-                return;
+                soldier_position_x = soldier_position_x;
             }
             if (left && soldier_position_x <= left_boundary) {
-                return;
+                soldier_position_x = soldier_position_x;
             }
             
             if (!(boss_phase && boss_alive) && !second_boss_alive) {
@@ -1997,7 +1996,8 @@ void iAnim()
             {
                 if (second_boss_x >= -100 && second_boss_x <= 1100) {
                     second_boss_fire_x -= second_boss_fire_speed;
-                    if (checkCollision(second_boss_fire_x, second_boss_fire_y, 30, 30, soldier_position_x, soldier_position_y, 30, 100))
+
+                    if (abs(second_boss_x - soldier_position_x) <= 200 || checkCollision(second_boss_fire_x, second_boss_fire_y, 30, 30, soldier_position_x, soldier_position_y, 30, 100))
                     {
                         second_boss_fire_active = false;
                         if (soldier_life > 0)
