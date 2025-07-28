@@ -1295,7 +1295,7 @@ void iKeyboard(unsigned char key, int state)
         right = false;
     }
 
-    if (key == 'd' && state == GLUT_DOWN)
+    if (key == 'd' && state == GLUT_DOWN && !is_firing) // Only allow movement if not firing
     {
         is_running = true;
         is_firing = false;
@@ -1312,10 +1312,9 @@ void iKeyboard(unsigned char key, int state)
         }
         facing_r = true; // Always set facing right when moving right
         
-        // Don't cancel the waitingForRunAfterBoss state when pressing right key
-        // This allows the automatic movement to complete
+        // No special handling for waitingForRunAfterBoss
     }
-    if (key == 'a' && state == GLUT_DOWN)
+    if (key == 'a' && state == GLUT_DOWN && !is_firing) // Only allow movement if not firing
     {
         is_firing = false;
         is_running = true;
@@ -1425,7 +1424,7 @@ void iSpecialKeyboard(int key, int state)
         return;
     }
 
-    if (key == GLUT_KEY_LEFT && state == GLUT_DOWN)
+    if (key == GLUT_KEY_LEFT && state == GLUT_DOWN && !is_firing) // Only allow movement if not firing
     {
         left = true;
         right = false;
@@ -1440,7 +1439,7 @@ void iSpecialKeyboard(int key, int state)
         }
     }
 
-    if (key == GLUT_KEY_RIGHT && state == GLUT_DOWN)
+    if (key == GLUT_KEY_RIGHT && state == GLUT_DOWN && !is_firing) // Only allow movement if not firing
     {
         right = true;
         left = false;
@@ -1453,8 +1452,7 @@ void iSpecialKeyboard(int key, int state)
             iMirrorSprite(&soldier_i, HORIZONTAL);
             facing_r = true;
         }
-        // Don't cancel the waitingForRunAfterBoss state when pressing right arrow
-        // This allows the automatic movement to complete
+        // No special handling for waitingForRunAfterBoss
     }
     if (key == GLUT_KEY_DOWN && state == GLUT_DOWN)
     {
@@ -1579,72 +1577,20 @@ void iAnim()
     if (!soldier_is_dead)
     {
         iAnimateSprite(&soldier_i);
-        if (is_running && !is_jumping)
+        if (is_running && !is_jumping && !is_firing) // Added check to prevent movement when firing
         {
             const int screen_middle = 430;
             const int transition_target = 450; // Target position for waitingForRunAfterBoss transition
             const int right_boundary = 1050; 
             const int left_boundary = 0;
             
-            // Special handling for waitingForRunAfterBoss state
+            // Special handling for waitingForRunAfterBoss state - disabled as requested
             if (waitingForRunAfterBoss) {
-                // After killing the second boss, scroll back faster regardless of key press
-                if (soldier_position_x > screen_middle) {
-                    // Soldier is beyond the middle of screen, move with faster scrolling and bring soldier down
-                    int fast_scroll_speed = 70; // Faster screen scrolling speed
-                    int soldier_move_speed = 30; // Soldier trailing speed
-                    
-                    // Move soldier towards middle of screen
-                    int soldier_move_dist = soldier_move_speed;
-                    if (soldier_position_x - soldier_move_dist < screen_middle) {
-                        soldier_move_dist = soldier_position_x - screen_middle;
-                    }
-                    soldier_position_x -= soldier_move_dist;
-                    soldier_r.x -= soldier_move_dist;
-                    soldier_i.x -= soldier_move_dist;
-                    soldier_fr.x -= soldier_move_dist;
-                        
-                    // Fast screen scrolling
-                    iWrapImage(&bg, -fast_scroll_speed);
-                    if (medicine_visible) {
-                        medicine_x -= fast_scroll_speed;
-                    }
-                    if (ammo_visible) {
-                        ammo_x -= fast_scroll_speed;
-                    }
-                    
-                    // Move zombies with background by updating their positions
-                    for (int i = 0; i < total_zombies; i++) {
-                        zombie_position_x[i] -= fast_scroll_speed;
-                        zombie_r[i].x -= fast_scroll_speed;
-                        zombie_d[i].x -= fast_scroll_speed;
-                        zombie_a[i].x -= fast_scroll_speed;
-                    }
-                    
-                    // Don't set zombie_should_move here - zombies are already moved
-                    game_Score += 2; // Bonus score for fast movement
-                } else {
-                    // Soldier has reached the middle of screen, apply normal logic and clear flag
-                    waitingForRunAfterBoss = false;
-                    
-                    // Allow normal movement on next frame
-                    return;
-                }
-                
-                // When in waitingForRunAfterBoss mode, ignore normal movement controls
-                // and only process automatic movement until soldier reaches screen_middle
-                if (left && soldier_position_x > 0) {
-                    int move_dist = 22;
-                    if (soldier_position_x - move_dist < 0)
-                        move_dist = soldier_position_x;
-                    soldier_position_x -= move_dist;
-                    soldier_r.x -= move_dist;
-                    soldier_i.x -= move_dist;
-                    soldier_fr.x -= move_dist;
-                    game_Score += 1;
-                }
+                // Just clear the flag immediately without any special movement
+                waitingForRunAfterBoss = false;
             }
-            else if (!(boss_phase && boss_alive) && !second_boss_alive) {
+            
+            if (!(boss_phase && boss_alive) && !second_boss_alive) {
                 if (right) {
                     bool blocked = false;
                     for (int i = 0; i < total_zombies; i++) {
@@ -1744,6 +1690,7 @@ void iAnim()
         }
         static int mouse_fire_delay = 0;
         if (mouse_fire_held && !is_jumping && ammo_count > 0) {
+            is_running = false; // Stop running when firing
             mouse_fire_delay++;
             if (mouse_fire_delay >= 1) {
                 ammo_count--;
@@ -1799,6 +1746,7 @@ void iAnim()
         }
         static int f_key_fire_delay = 0;
         if (is_firing && !is_jumping && ammo_count > 0) {
+            is_running = false; // Stop running when firing
             f_key_fire_delay++;
             if (f_key_fire_delay >= 1) {
                 ammo_count--;
