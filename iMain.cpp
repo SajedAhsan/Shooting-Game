@@ -82,27 +82,25 @@ typedef struct
     int zombie_attack_counter[MAX_ZOMBIES];
     int zombie_dead_frame_counter[MAX_ZOMBIES];
     
-    // ADD THESE MISSING STATES:
-    
-    // Missing zombie arrays
+    //  zombie arrays
     int attack_frame_delay[MAX_ZOMBIES];
     int attack_frame_timer[MAX_ZOMBIES];
     
-    // Missing soldier states
+    //  soldier states
     bool soldier_is_dying;
     bool soldier_is_dead;
     int soldier_death_frame;
     
-    // Missing movement flags
+    //  movement flags
     bool left;
     bool right;
     int bg_flag;
     
-    // Missing jump states
+    //  jump states
     bool jump;
     int jump_direction;
     
-    // Missing bullet arrays
+    //  bullet arrays
     bool bullet_fired_r[MAX_BULLETS];
     bool bullet_fired_l[MAX_BULLETS];
     int bullet_position_r_x[MAX_BULLETS];
@@ -110,13 +108,13 @@ typedef struct
     int bullet_position_l_x[MAX_BULLETS];
     int bullet_position_l_y[MAX_BULLETS];
     
-    // Missing input states
+    // input states
     bool mouse_fire_held;
     
-    // Missing boss frame timer
+    //  boss frame timer
     int boss_frame_timer;
     
-    // Missing second boss delay
+    //second boss delay
     int second_boss_attack_delay;
     
 } GameState;
@@ -893,7 +891,6 @@ void resumeGame()
     jump_direction = saved_state.jump_direction;
     mouse_fire_held = saved_state.mouse_fire_held;
     
-    // Restore zombie states AND RE-INITIALIZE SPRITES
     total_zombies = saved_state.total_zombies;
     for (int i = 0; i < MAX_ZOMBIES; i++)
     {
@@ -908,7 +905,6 @@ void resumeGame()
         attack_frame_delay[i] = saved_state.attack_frame_delay[i];
         attack_frame_timer[i] = saved_state.attack_frame_timer[i];
         
-        // RE-INITIALIZE ZOMBIE SPRITES - This was missing!
         if (i < total_zombies)
         {
             // Re-initialize zombie running sprite
@@ -957,8 +953,6 @@ void resumeGame()
         iSetSpritePosition(&boss_ca, boss_x, boss_y);
         iSetSpritePosition(&boss_d, boss_x, boss_y);
         
-        // APPLY SAVED MIRROR STATE TO BOSS SPRITES
-        // Check if boss sprites need to be mirrored to match saved state
         bool current_mirror_state = boss_i.flipHorizontal; // Check current mirror state
         if (current_mirror_state != bossMirrored)
         {
@@ -1311,7 +1305,6 @@ void iDraw()
         }
         else if (is_running)
         {
-            // gameScore += 1;
 
             iShowSprite(&soldier_r);
         }
@@ -1716,7 +1709,7 @@ void iKeyboard(unsigned char key, int state)
         right = false;
     }
 
-    if (key == 'd' && state == GLUT_DOWN && !is_firing) // Only allow movement if not firing
+    if (key == 'd' && state == GLUT_DOWN && !is_firing) 
     {
         is_running = true;
         is_firing = false;
@@ -1731,11 +1724,11 @@ void iKeyboard(unsigned char key, int state)
             iMirrorSprite(&soldier_fr, HORIZONTAL);
             iMirrorSprite(&soldier_i, HORIZONTAL);
         }
-        facing_r = true; // Always set facing right when moving right
+        facing_r = true; 
 
         // No special handling for waitingForRunAfterBoss
     }
-    if (key == 'a' && state == GLUT_DOWN && !is_firing) // Only allow movement if not firing
+    if (key == 'a' && state == GLUT_DOWN && !is_firing) 
     {
         is_firing = false;
         is_running = true;
@@ -1749,7 +1742,7 @@ void iKeyboard(unsigned char key, int state)
             iMirrorSprite(&soldier_fr, HORIZONTAL);
             iMirrorSprite(&soldier_i, HORIZONTAL);
         }
-        facing_r = false; // Always set facing left when moving left
+        facing_r = false; 
     }
     if (key == 'w' && !is_jumping)
     {
@@ -1759,8 +1752,7 @@ void iKeyboard(unsigned char key, int state)
     }
     if (!left && !right && is_firing)
     {
-        // When firing without movement, use current facing direction
-        // Only mirror if the fire sprite doesn't match current facing direction
+        
         if (!facing_r && !soldier_fr.flipHorizontal)
         {
             iMirrorSprite(&soldier_fr, HORIZONTAL);
@@ -1813,7 +1805,7 @@ void iSpecialKeyboard(int key, int state)
     if (key == GLUT_KEY_HOME)
     {
         if (!is_game_over && is_game_running)
-        { // Only save if game is active
+        { 
             saveGameState();
             can_resume = true;
         }
@@ -1851,7 +1843,7 @@ void iSpecialKeyboard(int key, int state)
         return;
     }
 
-    if (key == GLUT_KEY_LEFT && state == GLUT_DOWN && !is_firing) // Only allow movement if not firing
+    if (key == GLUT_KEY_LEFT && state == GLUT_DOWN && !is_firing) 
     {
         left = true;
         right = false;
@@ -1866,7 +1858,7 @@ void iSpecialKeyboard(int key, int state)
         }
     }
 
-    if (key == GLUT_KEY_RIGHT && state == GLUT_DOWN && !is_firing) // Only allow movement if not firing
+    if (key == GLUT_KEY_RIGHT && state == GLUT_DOWN && !is_firing) 
     {
         right = true;
         left = false;
@@ -1879,7 +1871,7 @@ void iSpecialKeyboard(int key, int state)
             iMirrorSprite(&soldier_i, HORIZONTAL);
             facing_r = true;
         }
-        // No special handling for waitingForRunAfterBoss
+        
     }
     if (key == GLUT_KEY_DOWN && state == GLUT_DOWN)
     {
@@ -2030,17 +2022,15 @@ void iAnim()
     if (!soldier_is_dead)
     {
         iAnimateSprite(&soldier_i);
-        if (is_running && !is_jumping && !is_firing) // Added check to prevent movement when firing
+        if (is_running && !is_jumping && !is_firing) 
         {
             const int screen_middle = 430;
-            const int transition_target = 450; // Target position for waitingForRunAfterBoss transition
+            const int transition_target = 450;
             const int right_boundary = 1050;
             const int left_boundary = 0;
 
-            // Special handling for waitingForRunAfterBoss state - disabled as requested
             if (waitingForRunAfterBoss)
             {
-                // Just clear the flag immediately without any special movement
                 waitingForRunAfterBoss = false;
             }
 
@@ -2102,7 +2092,6 @@ void iAnim()
                             soldier_fr.x -= diff;
                         }
                         zombie_should_move = true;
-                        // gameScore += 1;
                     }
                 }
                 if (left && soldier_position_x > 0)
@@ -2114,7 +2103,6 @@ void iAnim()
                     soldier_r.x -= move_dist;
                     soldier_i.x -= move_dist;
                     soldier_fr.x -= move_dist;
-                    // gameScore += 1;
                 }
             }
             else
@@ -2145,7 +2133,6 @@ void iAnim()
                             soldier_i.x += move_dist;
                             soldier_fr.x += move_dist;
                             zombie_should_move = true;
-                            // gameScore += 1;
                         }
                     }
                 }
@@ -2154,23 +2141,21 @@ void iAnim()
                     int move_dist = 22;
                     if (soldier_position_x - move_dist < 0)
                     {
-                        move_dist = soldier_position_x; // Adjust movement to stop exactly at boundary
+                        move_dist = soldier_position_x; 
                     }
                     soldier_position_x -= move_dist;
                     soldier_r.x -= move_dist;
                     soldier_i.x -= move_dist;
                     soldier_fr.x -= move_dist;
-                    // gameScore += 1;
                 }
             }
-            // Remove duplicate left movement code to prevent double movement
 
             iAnimateSprite(&soldier_r);
         }
         static int mouse_fire_delay = 0;
         if (mouse_fire_held && !is_jumping && ammo_count > 0)
         {
-            is_running = false; // Stop running when firing
+            is_running = false; 
             mouse_fire_delay++;
             if (mouse_fire_delay >= 1)
             {
@@ -2245,7 +2230,7 @@ void iAnim()
         static int f_key_fire_delay = 0;
         if (is_firing && !is_jumping && ammo_count > 0)
         {
-            is_running = false; // Stop running when firing
+            is_running = false; 
             f_key_fire_delay++;
             if (f_key_fire_delay >= 1)
             {
@@ -2296,7 +2281,7 @@ void iAnim()
                 }
                 else
                 {
-                    // When no movement keys are pressed, use current facing direction
+                    // when no movement keys are pressed, use current facing direction
                     if (facing_r)
                     {
                         if (soldier_fr.flipHorizontal)
