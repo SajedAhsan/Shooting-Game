@@ -83,27 +83,26 @@ typedef struct
     int zombie_attack_counter[MAX_ZOMBIES];
     int zombie_dead_frame_counter[MAX_ZOMBIES];
     
-    // ADD THESE MISSING STATES:
     
-    // Missing zombie arrays
+    //  zombie arrays
     int attack_frame_delay[MAX_ZOMBIES];
     int attack_frame_timer[MAX_ZOMBIES];
     
-    // Missing soldier states
+    //  soldier states
     bool soldier_is_dying;
     bool soldier_is_dead;
     int soldier_death_frame;
     
-    // Missing movement flags
+    // movement flags
     bool left;
     bool right;
     int bg_flag;
     
-    // Missing jump states
+    // jump states
     bool jump;
     int jump_direction;
     
-    // Missing bullet arrays
+    // bullet arrays
     bool bullet_fired_r[MAX_BULLETS];
     bool bullet_fired_l[MAX_BULLETS];
     int bullet_position_r_x[MAX_BULLETS];
@@ -111,13 +110,13 @@ typedef struct
     int bullet_position_l_x[MAX_BULLETS];
     int bullet_position_l_y[MAX_BULLETS];
     
-    // Missing input states
+    //input states
     bool mouse_fire_held;
     
-    // Missing boss frame timer
+    //boss frame timer
     int boss_frame_timer;
     
-    // Missing second boss delay
+    // second boss delay
     int second_boss_attack_delay;
     
     // Background selection
@@ -177,9 +176,9 @@ Image menu_background;
 
 // game variables
 Image bg;
-Image bg2; // Second background option
-Image bg_thumb1; // Thumbnail for first background
-Image bg_thumb2; // Thumbnail for second background
+Image bg2;
+Image bg_thumb1; 
+Image bg_thumb2; 
 Image gameover;
 Image victory;
 Image ammo;
@@ -293,7 +292,7 @@ bool boss_fire_left = false;
 
 // tracking second boss kill count
 int second_boss_kill_count = 0;
-int zombie_wave_count = 0; // Track zombie waves (4 waves before each second boss)
+int zombie_wave_count = 0; 
 bool boss_phase = false;
 bool waitingForRunAfterBoss = false;
 
@@ -514,7 +513,6 @@ void spawnZombiesPeriodically()
             zombie_wave_count++;
             spawnZombies();
         }
-        // After 4 waves, let the second boss spawn
     }
 }
 void second_bossSpawnTimerUpdate()
@@ -531,7 +529,7 @@ void second_bossSpawnTimerUpdate()
             second_boss_x = 900;
             second_boss_life = 40;
             second_boss_dead_animation_done = false;
-            zombie_wave_count = 0; // Reset wave count for next cycle
+            zombie_wave_count = 0; 
             iSetSpritePosition(&second_boss_spr_idle, second_boss_x, second_boss_y);
             iSetSpritePosition(&second_boss_spr_attack, second_boss_x, second_boss_y);
             iSetSpritePosition(&second_boss_spr_dead, second_boss_x, second_boss_y);
@@ -741,7 +739,7 @@ void saveGameState()
     saved_state.second_boss_life = second_boss_life;
     strcpy(saved_state.player_name, current_player_name);
     
-    // Save missing soldier states
+    // Save soldier states
     saved_state.facing_r = facing_r;
     saved_state.is_jumping = is_jumping;
     saved_state.is_running = is_running;
@@ -751,7 +749,7 @@ void saveGameState()
     saved_state.soldier_is_dead = soldier_is_dead;
     saved_state.soldier_death_frame = soldier_death_frame;
     
-    // Save missing boss states
+    // Save boss states
     saved_state.boss_alive = boss_alive;
     saved_state.boss_health = boss_health;
     saved_state.boss_x = boss_x;
@@ -761,7 +759,7 @@ void saveGameState()
     saved_state.bossMirrored = bossMirrored;
     saved_state.boss_frame_timer = boss_frame_timer;
     
-    // Save missing second boss states
+    // Save second boss states
     saved_state.second_boss_x = second_boss_x;
     saved_state.second_boss_y = second_boss_y;
     saved_state.second_boss_attacking = second_boss_attacking;
@@ -776,13 +774,13 @@ void saveGameState()
     saved_state.second_boss_attack_animating = second_boss_attack_animating;
     saved_state.second_boss_attack_delay = second_boss_attack_delay;
     
-    // Save missing boss fire states
+    // Save  boss fire states
     saved_state.boss_fire_active = boss_fire_active;
     saved_state.boss_fire_x = boss_fire_x;
     saved_state.boss_fire_y = boss_fire_y;
     saved_state.boss_fire_left = boss_fire_left;
     
-    // Save missing medicine and ammo states
+    // Save medicine and ammo states
     saved_state.medicine_visible = medicine_visible;
     saved_state.medicine_x = medicine_x;
     saved_state.medicine_y = medicine_y;
@@ -791,7 +789,7 @@ void saveGameState()
     saved_state.ammo_x = ammo_x;
     saved_state.ammo_y = ammo_y;
     
-    // Save missing movement states
+    // Save movement states
     saved_state.left = left;
     saved_state.right = right;
     saved_state.bg_flag = bg_flag;
@@ -952,7 +950,7 @@ void resumeGame()
     jump_direction = saved_state.jump_direction;
     mouse_fire_held = saved_state.mouse_fire_held;
     
-    // Restore zombie states AND RE-INITIALIZE SPRITES
+    // Restore zombie states
     total_zombies = saved_state.total_zombies;
     for (int i = 0; i < MAX_ZOMBIES; i++)
     {
@@ -967,22 +965,21 @@ void resumeGame()
         attack_frame_delay[i] = saved_state.attack_frame_delay[i];
         attack_frame_timer[i] = saved_state.attack_frame_timer[i];
         
-        // RE-INITIALIZE ZOMBIE SPRITES - This was missing!
         if (i < total_zombies)
         {
-            // Re-initialize zombie running sprite
+            //  zombie running sprite
             iInitSprite(&zombie_r[i]);
             iChangeSpriteFrames(&zombie_r[i], zombie_run, 7);
             iSetSpritePosition(&zombie_r[i], zombie_position_x[i], zombie_position_y[i]);
             iScaleSprite(&zombie_r[i], 3.75);
 
-            // Re-initialize zombie dead sprite
+            //  zombie dead sprite
             iInitSprite(&zombie_d[i]);
             iChangeSpriteFrames(&zombie_d[i], zombie_dead, 5);
             iSetSpritePosition(&zombie_d[i], zombie_position_x[i], zombie_position_y[i]);
             iScaleSprite(&zombie_d[i], 3.75);
 
-            // Re-initialize zombie attack sprite
+            //  zombie attack sprite
             iInitSprite(&zombie_a[i]);
             iChangeSpriteFrames(&zombie_a[i], zombie_attack, 5);
             iSetSpritePosition(&zombie_a[i], zombie_position_x[i], zombie_position_y[i]);
@@ -1016,9 +1013,8 @@ void resumeGame()
         iSetSpritePosition(&boss_ca, boss_x, boss_y);
         iSetSpritePosition(&boss_d, boss_x, boss_y);
         
-        // APPLY SAVED MIRROR STATE TO BOSS SPRITES
         // Check if boss sprites need to be mirrored to match saved state
-        bool current_mirror_state = boss_i.flipHorizontal; // Check current mirror state
+        bool current_mirror_state = boss_i.flipHorizontal; 
         if (current_mirror_state != bossMirrored)
         {
             // Mirror all boss sprites to match the saved state
@@ -1147,7 +1143,7 @@ void spawnMedicine()
 {
     if (!medicine_visible && !boss_phase)
     {
-        medicine_x = 200 + rand() % 1000; // random x position
+        medicine_x = 200 + rand() % 1000; 
         medicine_y = 128;
         medicine_visible = true;
     }
@@ -1408,7 +1404,6 @@ void iDraw()
         }
         else if (is_running)
         {
-            // gameScore += 1;
             iShowSprite(&soldier_r);
         }
         else
@@ -1822,7 +1817,6 @@ void iKeyboard(unsigned char key, int state)
             else if (key == 127 && state == GLUT_DOWN)
             { // Delete key to reset game data
                 resetGameData();
-                // You could add a confirmation message here if needed
             }
             return;
         }
@@ -1860,7 +1854,7 @@ void iKeyboard(unsigned char key, int state)
         right = false;
     }
 
-    if (key == 'd' && state == GLUT_DOWN && !is_firing) // Only allow movement if not firing
+    if (key == 'd' && state == GLUT_DOWN && !is_firing) 
     {
         is_running = true;
         is_firing = false;
@@ -1875,11 +1869,11 @@ void iKeyboard(unsigned char key, int state)
             iMirrorSprite(&soldier_fr, HORIZONTAL);
             iMirrorSprite(&soldier_i, HORIZONTAL);
         }
-        facing_r = true; // Always set facing right when moving right
+        facing_r = true; 
 
         // No special handling for waitingForRunAfterBoss
     }
-    if (key == 'a' && state == GLUT_DOWN && !is_firing) // Only allow movement if not firing
+    if (key == 'a' && state == GLUT_DOWN && !is_firing) 
     {
         is_firing = false;
         is_running = true;
@@ -1893,7 +1887,7 @@ void iKeyboard(unsigned char key, int state)
             iMirrorSprite(&soldier_fr, HORIZONTAL);
             iMirrorSprite(&soldier_i, HORIZONTAL);
         }
-        facing_r = false; // Always set facing left when moving left
+        facing_r = false; 
     }
     if (key == 'w' && !is_jumping)
     {
@@ -1996,7 +1990,7 @@ void iSpecialKeyboard(int key, int state)
         return;
     }
 
-    if (key == GLUT_KEY_LEFT && state == GLUT_DOWN && !is_firing) // Only allow movement if not firing
+    if (key == GLUT_KEY_LEFT && state == GLUT_DOWN && !is_firing) 
     {
         left = true;
         right = false;
@@ -2011,7 +2005,7 @@ void iSpecialKeyboard(int key, int state)
         }
     }
 
-    if (key == GLUT_KEY_RIGHT && state == GLUT_DOWN && !is_firing) // Only allow movement if not firing
+    if (key == GLUT_KEY_RIGHT && state == GLUT_DOWN && !is_firing) 
     {
         right = true;
         left = false;
@@ -2177,10 +2171,10 @@ void iAnim()
     if (!soldier_is_dead)
     {
         iAnimateSprite(&soldier_i);
-        if (is_running && !is_jumping && !is_firing) // Added check to prevent movement when firing
+        if (is_running && !is_jumping && !is_firing) 
         {
             const int screen_middle = 430;
-            const int transition_target = 450; // Target position for waitingForRunAfterBoss transition
+            const int transition_target = 450; 
             const int right_boundary = 1050;
             const int left_boundary = 0;
 
@@ -2257,7 +2251,6 @@ void iAnim()
                             }
                         }
                         zombie_should_move = true;
-                        // gameScore += 1;
                     }
                 }
                 if (left && soldier_position_x > 0)
@@ -2300,7 +2293,6 @@ void iAnim()
                             soldier_i.x += move_dist;
                             soldier_fr.x += move_dist;
                             zombie_should_move = true;
-                            // gameScore += 1;
                         }
                     }
                 }
@@ -2309,13 +2301,12 @@ void iAnim()
                     int move_dist = 22;
                     if (soldier_position_x - move_dist < 0)
                     {
-                        move_dist = soldier_position_x; // Adjust movement to stop exactly at boundary
+                        move_dist = soldier_position_x; 
                     }
                     soldier_position_x -= move_dist;
                     soldier_r.x -= move_dist;
                     soldier_i.x -= move_dist;
                     soldier_fr.x -= move_dist;
-                    // gameScore += 1;
                 }
             }
             // Remove duplicate left movement code to prevent double movement
@@ -2325,7 +2316,7 @@ void iAnim()
         static int mouse_fire_delay = 0;
         if (mouse_fire_held && !is_jumping && ammo_count > 0)
         {
-            is_running = false; // Stop running when firing
+            is_running = false; 
             mouse_fire_delay++;
             if (mouse_fire_delay >= 1)
             {
@@ -2451,7 +2442,7 @@ void iAnim()
                 }
                 else
                 {
-                    // When no movement keys are pressed, use current facing direction
+                    // when no movement keys are pressed, use current facing direction
                     if (facing_r)
                     {
                         if (soldier_fr.flipHorizontal)
@@ -2777,7 +2768,7 @@ void iAnim()
             {
                 second_boss_spawned = false;
                 second_boss_spawn_timer = 0;
-                zombie_wave_count = 0; // Reset for next cycle
+                zombie_wave_count = 0; 
 
                 second_boss_x = -500;
                 iSetSpritePosition(&second_boss_spr_idle, second_boss_x, second_boss_y);
