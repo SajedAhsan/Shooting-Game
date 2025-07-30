@@ -120,6 +120,9 @@ typedef struct
     // Missing second boss delay
     int second_boss_attack_delay;
     
+    // Background selection
+    int selected_background;
+    
 } GameState;
 
 // save state variables
@@ -823,6 +826,9 @@ void saveGameState()
         saved_state.bullet_position_l_y[i] = bullet_position_l_y[i];
     }
 
+    // Save background selection
+    saved_state.selected_background = selected_background;
+
     FILE *f = fopen(SAVE_FILE, "wb");
     if (f)
     {
@@ -1040,6 +1046,9 @@ void resumeGame()
     {
         iSetSpritePosition(&boss_fire_sprite, boss_fire_x, boss_fire_y);
     }
+    
+    // Restore background selection
+    selected_background = saved_state.selected_background;
 }
 
 void cleanup()
