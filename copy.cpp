@@ -167,10 +167,16 @@ int game_Score = 0;
 bool show_high_score_screen = false;
 bool show_credits = false;
 bool show_help = false;
+bool show_background_selection = false;
+int selected_background = 1; // 1 for back.png, 2 for backk.png
+int hovered_bg_index = -1;
 Image menu_background;
 
 // game variables
 Image bg;
+Image bg2; // Second background option
+Image bg_thumb1; // Thumbnail for first background
+Image bg_thumb2; // Thumbnail for second background
 Image gameover;
 Image victory;
 Image ammo;
@@ -533,9 +539,19 @@ void loadResources()
 {
 
     srand(time(0));
-    // loading menu background
+    // loading both background options
     iLoadImage(&bg, "assets/bg/back.png");
     iResizeImage(&bg, 1200, 600);
+    
+    iLoadImage(&bg2, "assets/bg/backk.png");
+    iResizeImage(&bg2, 1200, 600);
+    
+    // loading background thumbnails for selection
+    iLoadImage(&bg_thumb1, "assets/bg/back.png");
+    iResizeImage(&bg_thumb1, 300, 150);
+    
+    iLoadImage(&bg_thumb2, "assets/bg/backk.png");
+    iResizeImage(&bg_thumb2, 300, 150);
 
     // credits
     iLoadImage(&credits, "assets/bg/credits.png");
@@ -1204,7 +1220,34 @@ void iDraw()
             iText(550, 400, "Enter your name:", GLUT_BITMAP_HELVETICA_18);
             iSetColor(255, 255, 255);
             iText(550, 350, current_player_name, GLUT_BITMAP_HELVETICA_18);
-            iText(550, 300, "Press ENTER to start", GLUT_BITMAP_HELVETICA_12);
+            iText(550, 300, "Press ENTER to continue", GLUT_BITMAP_HELVETICA_12);
+            return;
+        }
+        if (show_background_selection)
+        {
+            iSetColor(255, 255, 0);
+            iText(500, 500, "Choose Ground:", GLUT_BITMAP_HELVETICA_18);
+            
+            // Draw background option 1
+            int bg1_x = 250, bg1_y = 250;
+            if (hovered_bg_index == 0)
+            {
+                iSetColor(255, 255, 0);
+                iRectangle(bg1_x - 5, bg1_y - 5, 310, 160);
+            }
+            iShowLoadedImage(bg1_x, bg1_y, &bg_thumb1);
+            
+            // Draw background option 2
+            int bg2_x = 650, bg2_y = 250;
+            if (hovered_bg_index == 1)
+            {
+                iSetColor(255, 255, 0);
+                iRectangle(bg2_x - 5, bg2_y - 5, 310, 160);
+            }
+            iShowLoadedImage(bg2_x, bg2_y, &bg_thumb2);
+            
+            iSetColor(255, 255, 255);
+            iText(500, 200, "Click to select background", GLUT_BITMAP_HELVETICA_12);
             return;
         }
         if (show_high_score_screen)
@@ -1303,8 +1346,15 @@ void iDraw()
     }
     else
     {
-
-        iShowLoadedImage(0, 0, &bg);
+        // Show selected background
+        if (selected_background == 1)
+        {
+            iShowLoadedImage(0, 0, &bg);
+        }
+        else
+        {
+            iShowLoadedImage(0, 0, &bg2);
+        }
         if (paused)
         {
             iSetColor(255, 255, 0);
@@ -1481,7 +1531,27 @@ void iDraw()
 
 void iMouseMove(int mx, int my)
 {
-    if (!is_game_running && !is_entering_name && !show_high_score_screen && !show_credits && !show_help && !show_settings)
+    if (show_background_selection)
+    {
+        hovered_bg_index = -1;
+        
+        // Background option 1 hover detection
+        int bg1_x = 250, bg1_y = 250, bg_width = 300, bg_height = 150;
+        if (mx >= bg1_x && mx <= bg1_x + bg_width && my >= bg1_y && my <= bg1_y + bg_height)
+        {
+            hovered_bg_index = 0;
+        }
+        
+        // Background option 2 hover detection
+        int bg2_x = 650, bg2_y = 250;
+        if (mx >= bg2_x && mx <= bg2_x + bg_width && my >= bg2_y && my <= bg2_y + bg_height)
+        {
+            hovered_bg_index = 1;
+        }
+        return;
+    }
+    
+    if (!is_game_running && !is_entering_name && !show_high_score_screen && !show_credits && !show_help && !show_settings && !show_background_selection)
     {
         hovered_index = -1;
 
@@ -1520,6 +1590,29 @@ void iMouseMove(int mx, int my)
 
 void iMouse(int button, int state, int mx, int my)
 {
+    if (show_background_selection && button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+    {
+        // Background option 1 click detection
+        int bg1_x = 250, bg1_y = 250, bg_width = 300, bg_height = 150;
+        if (mx >= bg1_x && mx <= bg1_x + bg_width && my >= bg1_y && my <= bg1_y + bg_height)
+        {
+            selected_background = 1;
+            show_background_selection = false;
+            resetGameState();
+            return;
+        }
+        
+        // Background option 2 click detection
+        int bg2_x = 650, bg2_y = 250;
+        if (mx >= bg2_x && mx <= bg2_x + bg_width && my >= bg2_y && my <= bg2_y + bg_height)
+        {
+            selected_background = 2;
+            show_background_selection = false;
+            resetGameState();
+            return;
+        }
+    }
+    
     if (!is_game_running && button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && hovered_index != -1)
     {
         iPlaySound("assets/sounds/clicked.wav", false);
@@ -1650,7 +1743,7 @@ void iKeyboard(unsigned char key, int state)
                 if (strlen(current_player_name) > 0)
                 {
                     is_entering_name = false;
-                    resetGameState();
+                    show_background_selection = true;
                 }
                 return;
             }
