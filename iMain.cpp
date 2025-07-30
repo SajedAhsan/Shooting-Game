@@ -1400,7 +1400,6 @@ void iDraw()
         else if (is_running)
         {
             // gameScore += 1;
-
             iShowSprite(&soldier_r);
         }
         else
@@ -2176,10 +2175,18 @@ void iAnim()
             const int right_boundary = 1050;
             const int left_boundary = 0;
 
-            // Special handling for waitingForRunAfterBoss state - disabled as requested
+            // Special handling for waitingForRunAfterBoss state - move soldier back to 430 if beyond
             if (waitingForRunAfterBoss)
             {
-                // Just clear the flag immediately without any special movement
+                // If soldier is beyond 430 pixels, move back to 430
+                if (soldier_position_x > screen_middle)
+                {
+                    soldier_position_x = screen_middle;
+                    iSetSpritePosition(&soldier_r, soldier_position_x, soldier_position_y);
+                    iSetSpritePosition(&soldier_i, soldier_position_x, soldier_position_y);
+                    iSetSpritePosition(&soldier_fr, soldier_position_x, soldier_position_y);
+                    iSetSpritePosition(&soldier_d, soldier_position_x, soldier_position_y);
+                }
                 waitingForRunAfterBoss = false;
             }
 
@@ -2207,11 +2214,6 @@ void iAnim()
                             {
                                 move_dist = screen_middle - soldier_position_x;
                             }
-                            // don't move past right boundary
-                            if (soldier_position_x + move_dist > right_boundary)
-                            {
-                                move_dist = right_boundary - soldier_position_x;
-                            }
                             if (move_dist > 0)
                             {
                                 soldier_position_x += move_dist;
@@ -2220,9 +2222,22 @@ void iAnim()
                                 soldier_fr.x += move_dist;
                             }
                         }
-                        else if (soldier_position_x == screen_middle)
+                        else if (soldier_position_x >= screen_middle)
                         {
-                            iWrapImage(&bg, -22);
+                            // Keep soldier at 430 and scroll background
+                            soldier_position_x = screen_middle;
+                            iSetSpritePosition(&soldier_r, soldier_position_x, soldier_position_y);
+                            iSetSpritePosition(&soldier_i, soldier_position_x, soldier_position_y);
+                            iSetSpritePosition(&soldier_fr, soldier_position_x, soldier_position_y);
+                            
+                            // Scroll background based on selected background
+                            if (selected_background == 1) {
+                                iWrapImage(&bg, -22);
+                            } else {
+                                iWrapImage(&bg2, -22);
+                            }
+                            
+                            // Move medicine and ammo with background
                             if (medicine_visible)
                             {
                                 medicine_x -= 22;
@@ -2231,14 +2246,6 @@ void iAnim()
                             {
                                 ammo_x -= 22;
                             }
-                        }
-                        if (soldier_position_x > screen_middle)
-                        {
-                            int diff = soldier_position_x - screen_middle;
-                            soldier_position_x = screen_middle;
-                            soldier_r.x -= diff;
-                            soldier_i.x -= diff;
-                            soldier_fr.x -= diff;
                         }
                         zombie_should_move = true;
                         // gameScore += 1;
